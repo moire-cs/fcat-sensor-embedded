@@ -55,8 +55,8 @@ void setup() {
   // driver.setTxPower(23, false);
   // driver.setModemConfig(RH_RF95::Bw31_25Cr48Sf512);
 
-  while (!Serial);
-  Serial.println("LoRa Sender");
+  while (!Serial)
+    Serial.println("LoRa Sender");
 
   //setup LoRa transceiver module
   // LoRa.setPins(ss, rst, dio0);
@@ -81,12 +81,12 @@ void setup() {
 
 
 void loop() {
-  // int moisture_val = 100 - (int)((analogRead(moisture) - 196) / 3.24);
-  int moisture_val = (int)analogRead(moisture);
+  int moisture_val = 100 - (int)((analogRead(moisture) - 900) / 20);
+  // int moisture_val = (int)analogRead(moisture);
   int light_val = (int)(100 * analogRead(light) / 4095);
   int tempF = sht1x.readTemperatureF();
   int humidity = sht1x.readHumidity();
-  Serial.println(String(moisture_val) + "%M " + String(tempF) + "F " + humidity + "%H " + light_val + "%L");
+  // Serial.println(String(moisture_val) + "%M " + String(tempF) + "F " + humidity + "%H " + light_val + "%L");
   delay(250);
   // Serial.println("Hello World");
   // if (manager.available()) {
@@ -104,14 +104,13 @@ void loop() {
   //       Serial.println("No ACK-ACK");
   //   }
   // }
-  Serial.print("Sending packet: ");
-  Serial.println(counter);
+  Serial.println("Sending packet " + String(counter) + ": " + String(moisture_val) + "%M " + String(tempF) + "F " + humidity + "%H " + light_val + "%L");
+  // Serial.println(counter);
 
   //Send LoRa packet to receiver
   LoRa.beginPacket();
   LoRa.print("hello ");
-  LoRa.print(counter);
-  LoRa.endPacket();
+  LoRa.endPacket(true);
 
   counter++;
 }

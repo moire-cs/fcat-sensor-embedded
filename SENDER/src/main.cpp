@@ -20,8 +20,8 @@ const int misoPin = GPIO_NUM_19;
 const int mosiPin = GPIO_NUM_23;
 const int nssPin = GPIO_NUM_5;
 const int resetPin = GPIO_NUM_14;
-const int dio0Pin = GPIO_NUM_13;
-// const int dio1Pin = GPIO_NUM_12;
+const int dio0Pin = GPIO_NUM_15;
+// const int dio1Pin = GPIO_NUM_2;
 
 // RH_RF95 driver;
 

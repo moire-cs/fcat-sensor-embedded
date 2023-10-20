@@ -86,28 +86,12 @@ void loop() {
   int light_val = (int)(100 * analogRead(light) / 4095);
   int tempF = sht1x.readTemperatureF();
   int humidity = sht1x.readHumidity();
-  // Serial.println(String(moisture_val) + "%M " + String(tempF) + "F " + humidity + "%H " + light_val + "%L");
+
   delay(250);
-  // Serial.println("Hello World");
-  // if (manager.available()) {
-  //   uint8_t len = sizeof(buf);
-  //   uint8_t from;
-  //   if (manager.recvfromAck(buf, &len, &from)) {
-  //     Serial.print("got reply from : 0x");
-  //     Serial.print(from, HEX);
-  //     Serial.print(" : RSSI ");
-  //     Serial.print(driver.lastRssi());
-  //     Serial.print(" : ");
-  //     Serial.println((char*)buf);
 
-  //     if (!manager.sendtoWait(data, sizeof(data), from))
-  //       Serial.println("No ACK-ACK");
-  //   }
-  // }
   Serial.println("Sending packet " + String(counter) + ": " + String(moisture_val) + "%M " + String(tempF) + "F " + humidity + "%H " + light_val + "%L");
-  // Serial.println(counter);
 
-  //Send LoRa packet to receiver
+  // sends hello over radio
   LoRa.beginPacket();
   LoRa.print("hello ");
   LoRa.endPacket(true);

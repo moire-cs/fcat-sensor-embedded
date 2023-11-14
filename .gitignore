@@ -1,0 +1,10 @@
+./SENDER/.pio
+./RECEIVER/.pio
+./SENDER/.vscode/.browse.c_cpp.db*
+./SENDER/.vscode/c_cpp_properties.json
+./SENDER/.vscode/launch.json
+./SENDER/.vscode/ipch
+./RECEIVER/.vscode/.browse.c_cpp.db*
+./RECEIVER/.vscode/c_cpp_properties.json
+./RECEIVER/.vscode/launch.json
+./RECEIVER/.vscode/ipch

@@ -117,9 +117,9 @@ void setup()
 {
 
   pinMode(GPIO_NUM_18, OUTPUT);
-  pinMode(GPIO_NUM_19, INPUT);
+  pinMode(MISO, INPUT);
 
-  pinMode(GPIO_NUM_23, OUTPUT);
+  pinMode(MOSI, OUTPUT);
   // initialize Serial Monitor
   Serial.begin(115200);
   while (!Serial)

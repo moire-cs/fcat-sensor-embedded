@@ -40,6 +40,8 @@ ClosedCube_HDC1080 hdc1080;
 #define MAX -740*WAIT_TIME/1000
 int16_t count = 0x10;
 int counter = 0;
+// int* counter = (int*)malloc(sizeof(int));
+// int* counterPtr = &counter;
 
 
 double readings[5] = { 0, 0, 0, 0, 0 };
@@ -53,7 +55,7 @@ void setup()
     Serial.begin(115200);
 
     pinMode(moisture, INPUT);
-    // pinMode(light, INPUT);
+    pinMode(light, INPUT);
     pinMode(battery, INPUT);
     pinMode(clockPin, OUTPUT);
     pinMode(misoPin, INPUT);
@@ -126,11 +128,15 @@ void getReadings()
     delay(WAIT_TIME);
     pcnt_get_counter_value(PCNT_UNIT_0, &count);
     pcnt_counter_pause(PCNT_UNIT_0);
-    double moisture_val = (((double)(count - MIN) / (MAX - MIN)) * 100);
+    // double moisture_val = (((double)(count - MIN) / (MAX - MIN)) * 100);
+    double moisture_val = (double)count;
 
-    // int light_val = (int)(100 * analogRead(light) / 4095);
+
     readings[0] = moisture_val;
-    // readings[1] = light_val;
+    // int light_val = (int)(100 * analogRead(light) / 4095);
+    double light_val = (double)analogRead(light);
+    // Serial.println(light_val);
+    readings[1] = light_val;
 
     int battery_level = 0;
 
@@ -152,16 +158,17 @@ void getReadings()
 
 void loop()
 {
-
+    // Serial.println(*counterPtr);
     getReadings();
     delay(100);
-    String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " V";
+    String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
     Serial.println(packetInfo);
 
     // sends packet over radio
     LoRa.beginPacket();
     LoRa.print(packetInfo);
     LoRa.endPacket();
+
 
     counter++;
     delay(500);

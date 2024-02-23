@@ -38,7 +38,7 @@ ClosedCube_HDC1080 hdc1080;
 #define WAIT_TIME 500
 #define MIN -21300*WAIT_TIME/1000
 #define MAX -740*WAIT_TIME/1000
-int16_t count = 0x10;
+int16_t count = 0x00;
 int counter = 0;
 // int* counter = (int*)malloc(sizeof(int));
 // int* counterPtr = &counter;
@@ -62,9 +62,9 @@ void setup()
     pinMode(mosiPin, OUTPUT);
     pinMode(GPIO_NUM_26, OUTPUT);
 
-    digitalWrite(GPIO_NUM_26, HIGH);
+    // digitalWrite(GPIO_NUM_26, HIGH);
 
-    hdc1080.begin(0x40);
+    // hdc1080.begin(0x40);
 
 
     pcnt_unit_t unit = PCNT_UNIT_0;
@@ -130,7 +130,7 @@ void getReadings()
     pcnt_counter_pause(PCNT_UNIT_0);
     // double moisture_val = (((double)(count - MIN) / (MAX - MIN)) * 100);
     double moisture_val = (double)count;
-
+    // Serial.println(count);
 
     readings[0] = moisture_val;
     // int light_val = (int)(100 * analogRead(light) / 4095);

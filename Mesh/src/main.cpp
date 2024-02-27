@@ -10,12 +10,12 @@
 #include "esp_wifi.h"
 #include <driver/adc.h>
 #include "radio_pinouts_and_constants.h"
-#include "mesh_functionality.h"
-#include "measurements.h"
-
+#include "meshing.h"
+#include "measurement.h"
 #include <EEPROM.h>
 
 struct timeval tv_now;
+struct timeval start;
 
 void rhSetup();
 void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
@@ -23,7 +23,7 @@ void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, 
 
 void setup()
 {
-
+    gettimeofday(&start, NULL);
     Serial.begin(115200);
     esp_wifi_set_mode(WIFI_MODE_NULL);
 
@@ -60,8 +60,10 @@ void loop()
 
     if (!isFull)
     {
-        Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
-        esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer);
+        Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
+        uint64_t sleepTime = ((timer + start.tv_sec - tv_now.tv_sec)) * microseconds + start.tv_usec - tv_now.tv_usec;
+        Serial.println("Sleeping at: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds and for: " + String((double)sleepTime / microseconds) + " seconds");
+        esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
         esp_deep_sleep_start();
     }
     printReadings();
@@ -95,8 +97,8 @@ void loop()
 
     // Prepare for new readings (would be next day)
     clearReadings();
-    tv_now = {0, 0};
+    // tv_now = {0, 0};
     Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
-    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer);
+    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer * microseconds);
     esp_deep_sleep_start();
 }

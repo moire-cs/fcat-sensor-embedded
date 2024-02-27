@@ -1,8 +1,16 @@
 #include <RH_RF95.h>
+// Sensor Readings
+//                    M  T  H  L  B
+double readings[5] = {0, 0, 0, 0, 0};
 
-#define timer_wait 10
-uint64_t timer = timer_wait * 1000000; // microseconds ???
+// Flash Memory Allocation
+#define EEPROM_SIZE 120 // 5 readings * 8 bytes (double) * 3 packets = 120 bytes
 
+// For Device Sleep
+uint64_t timer = 10; // converted to microseconds in code
+#define microseconds 1000000
+
+// Radio Constants
 #define RF95_FREQ 915.0 // USA and Ecuador
 #define WDT_TIMEOUT 15
 
@@ -32,9 +40,6 @@ const uint8_t selfAddress_ = ENDNODE_ADDRESS; // CHANGE THIS!!!
 const uint8_t targetAddress_ = NODE_ADDRESS;  // integer value
 #endif
 
-//                    M  T  H  L  B
-double readings[5] = {0, 0, 0, 0, 0};
-
 // radio driver & message mesh delivery/receipt manager
 RH_RF95 RFM95Modem_(RFM95_CS, RFM95_INT);
 RHMesh RHMeshManager_(RFM95Modem_, selfAddress_);
@@ -54,5 +59,3 @@ void rhSetup()
     RFM95Modem_.setFrequency(RF95_FREQ);
     RFM95Modem_.setCADTimeout(500);
 }
-
-#define EEPROM_SIZE 120

@@ -1,4 +1,3 @@
-// #include "pinouts_and_constants.h"
 void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     // while at it, wait for a message from other nodes

@@ -10,10 +10,6 @@
 // #include "pinouts_and_constants.h"
 
 ClosedCube_HDC1080 hdc1080;
-struct timeval tv_now_measure;
-
-void printReadings();
-void clearReadings();
 
 void measureSetup()
 {
@@ -80,7 +76,7 @@ void getReadings()
 // writes sensor readings to flash memory (120 bytes)
 boolean saveReadings(timeval *tv_now)
 {
-    int base_addr = ((int)floor(tv_now->tv_sec / timer_wait)) % 3;
+    int base_addr = ((int)floor(tv_now->tv_sec / timer)) % 3;
 
     for (int i = 0; i < 5; i++)
     {

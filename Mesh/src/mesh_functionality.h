@@ -1,4 +1,4 @@
-
+// #include "pinouts_and_constants.h"
 void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     // while at it, wait for a message from other nodes
@@ -48,7 +48,7 @@ void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, 
 
             std::sprintf(buf_, "%s", reinterpret_cast<char *>(_msgRcvBuf));
             msgRcv = std::string(buf_);
-            Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n",* _msgFrom,
+            Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
                           msgRcv.c_str(), RFM95Modem_.lastRssi());
         }
         else

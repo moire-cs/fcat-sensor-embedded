@@ -1,5 +1,7 @@
 #include <RH_RF95.h>
 
+uint64_t timer = 5000000; // microseconds ???
+
 #define RF95_FREQ 915.0 // USA and Ecuador
 #define WDT_TIMEOUT 15
 
@@ -13,33 +15,6 @@
 
 #define SENDING_MODE 0
 #define RECEIVING_MODE 1
-
-// TODO: Define sensor pinouts
-
-// Sensor pins
-#define battery 25 // FIXME: Do we need this either if we're using ADC
-#define moisture 34
-#define light 35
-
-#define clockPin 18
-#define dataPin 21
-
-// pins for radio
-#define misoPin 23
-#define mosiPin 19
-#define nssPin 5
-#define resetPin 14
-#define dio0Pin 13
-#define dio1Pin 12
-
-// For Pulse Counter
-#define SOIL_PULSE_COUNT_DELAY 500
-#define MIN -21300 * WAIT_TIME / 1000 // will change based on soil moisture measurements
-#define MAX -740 * WAIT_TIME / 1000   // will change based on soil moisture measurements
-int16_t moisture_count = 0x10;        // Do we need 16? or is 0x00 ok
-int counter = 0;
-//  M  T  H  L  B
-double readings[5] = {0, 0, 0, 0, 0};
 
 #if defined(SELF_ADDRESS) && defined(TARGET_ADDRESS)
 const uint8_t selfAddress_ = SELF_ADDRESS;
@@ -55,6 +30,9 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 const uint8_t selfAddress_ = ENDNODE_ADDRESS; // CHANGE THIS!!!
 const uint8_t targetAddress_ = NODE_ADDRESS;  // integer value
 #endif
+
+//                    M  T  H  L  B
+double readings[5] = {0, 0, 0, 0, 0};
 
 // radio driver & message mesh delivery/receipt manager
 RH_RF95 RFM95Modem_(RFM95_CS, RFM95_INT);

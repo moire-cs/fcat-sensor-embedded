@@ -71,7 +71,9 @@ void loop()
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
-    if ((millis() - _lastSend > sendInterval_) &&
+    // Serial.println(String(millis() - _lastSend));
+    // Serial.println(selfAddress_ != ENDNODE_ADDRESS);
+    if ((isFull) &&
         selfAddress_ != ENDNODE_ADDRESS) // was ENDNODE_ADDRESS, could be targetAddress_
     {
         mode_ = SENDING_MODE;
@@ -82,10 +84,12 @@ void loop()
         // Send a message to another rhmesh node
         // TODO: Take data here
         // TODO: Send our data here
-        String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
-        Serial.printf("Sending \"%s\" to %d...", packetInfo, targetAddress_);
-        runSending(packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
-        _lastSend = millis();
+        String packetInfo = "Sending packet: " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
+        Serial.println(packetInfo);
+        Serial.printf("Sending data to %d...", targetAddress_);
+        runSending(&packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+        // _lastSend = millis();
+        isFull = false;
         mode_ = RECEIVING_MODE;
     }
 

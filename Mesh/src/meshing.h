@@ -29,11 +29,11 @@ void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom,
     }
 }
 
-void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
+void runSending(String *packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     uint8_t _err =
-        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(&packetInfo[0]),
-                                  packetInfo.length(), targetAddress_);
+        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(packetInfo),
+                                  packetInfo->length(), targetAddress_);
     if (_err == RH_ROUTER_ERROR_NONE)
     {
         // message successfully be sent to the target node, or next neighboring

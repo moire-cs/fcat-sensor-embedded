@@ -36,8 +36,8 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
-const uint8_t selfAddress_ = ENDNODE_ADDRESS; // CHANGE THIS!!!
-const uint8_t targetAddress_ = NODE_ADDRESS;  // integer value
+const uint8_t selfAddress_ = NODE_ADDRESS;      // CHANGE THIS!!!
+const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif
 
 // radio driver & message mesh delivery/receipt manager

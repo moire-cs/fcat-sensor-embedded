@@ -9,16 +9,11 @@
 #include "ClosedCube_HDC1080.h"
 #include "esp_wifi.h"
 #include <driver/adc.h>
-#include "pinouts_and_constants.h"
-// #include "sensor_pinouts.h"
+#include "radio_pinouts_and_constants.h"
 #include "mesh_functionality.h"
 #include "measurements.h"
 
 #include <EEPROM.h>
-
-// double readings[5] = {0, 0, 0, 0, 0};
-// double *sensor_readings;
-// double *readings;
 
 struct timeval tv_now;
 
@@ -45,7 +40,8 @@ void setup()
 
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
     // add current thread to WDT watch
-    Measure_SetUp();
+    EEPROM.begin(EEPROM_SIZE);
+    measureSetup();
     rhSetup();
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
                    " INIT ---------------- ");
@@ -57,8 +53,18 @@ uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 void loop()
 {
     getReadings();
-    String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
+    String packetInfo = "Sending packet: " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
     Serial.println(packetInfo);
+    gettimeofday(&tv_now, NULL);
+    boolean isFull = saveReadings(&tv_now);
+
+    if (!isFull)
+    {
+        Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
+        esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer);
+        esp_deep_sleep_start();
+    }
+    printReadings();
 
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
@@ -86,4 +92,11 @@ void loop()
         runReceiver(_msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     }
     esp_task_wdt_reset();
+
+    // Prepare for new readings (would be next day)
+    clearReadings();
+    tv_now = {0, 0};
+    Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
+    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer);
+    esp_deep_sleep_start();
 }

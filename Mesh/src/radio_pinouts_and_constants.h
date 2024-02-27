@@ -1,6 +1,7 @@
 #include <RH_RF95.h>
 
-uint64_t timer = 5000000; // microseconds ???
+#define timer_wait 10
+uint64_t timer = timer_wait * 1000000; // microseconds ???
 
 #define RF95_FREQ 915.0 // USA and Ecuador
 #define WDT_TIMEOUT 15
@@ -53,3 +54,5 @@ void rhSetup()
     RFM95Modem_.setFrequency(RF95_FREQ);
     RFM95Modem_.setCADTimeout(500);
 }
+
+#define EEPROM_SIZE 120

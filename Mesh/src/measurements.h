@@ -6,11 +6,16 @@
 #include "sensor_pinouts.h"
 #include <Wire.h>
 #include <driver/adc.h>
+#include <EEPROM.h>
 // #include "pinouts_and_constants.h"
 
 ClosedCube_HDC1080 hdc1080;
+struct timeval tv_now_measure;
 
-void Measure_SetUp()
+void printReadings();
+void clearReadings();
+
+void measureSetup()
 {
     digitalWrite(GPIO_NUM_26, HIGH);
 
@@ -33,7 +38,6 @@ void Measure_SetUp()
 }
 void getReadings()
 {
-
     // Enable the Power Rail
     digitalWrite(power_rail, HIGH);
 
@@ -52,7 +56,6 @@ void getReadings()
     // TODO: calculate difference
     hdc1080.begin(0x40);
     readings[0] = (double)moisture_count;
-    Serial.println(moisture_count);
 
     // Light Reading
     // int light_val = (int)(100 * analogRead(light) / 4095);
@@ -72,5 +75,42 @@ void getReadings()
 
     // Disable the Power Rail
     digitalWrite(power_rail, LOW);
-    // return readings;
 };
+
+// writes sensor readings to flash memory (120 bytes)
+boolean saveReadings(timeval *tv_now)
+{
+    int base_addr = ((int)floor(tv_now->tv_sec / timer_wait)) % 3;
+
+    for (int i = 0; i < 5; i++)
+    {
+        EEPROM.writeDouble((i + base_addr * 5) * sizeof(double), readings[i]);
+    }
+    EEPROM.commit();
+    return base_addr == 2;
+}
+
+// prints all of the 3 readings from memory
+void printReadings()
+{
+    for (int numReadings = 0; numReadings < 3; numReadings++)
+    {
+        double tempReadings[5] = {0, 0, 0, 0, 0};
+        for (int i = 0; i < 5; i++)
+        {
+            tempReadings[i] = EEPROM.readDouble((i + numReadings * 5) * sizeof(double));
+        }
+        String packetInfo = "Packet " + String(numReadings) + ": " + String(tempReadings[0]) + "%M " + String(tempReadings[2]) + "F " + tempReadings[3] + "%H " + tempReadings[1] + "%L " + tempReadings[4] + " mV";
+        Serial.println(packetInfo);
+    }
+}
+
+// clears all readings from memory (sets them to 0)
+void clearReadings()
+{
+    for (int i = 0; i < 15; i++)
+    {
+        EEPROM.writeDouble(i * sizeof(double), 0);
+    }
+    EEPROM.commit();
+}

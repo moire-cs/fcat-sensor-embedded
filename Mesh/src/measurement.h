@@ -16,11 +16,11 @@ int measurement_memory_start = 8; // first 8 bytes are reserved
 class Measurement
 {
 public:
-    int moisture_percent;
+    unsigned int moisture_percent;
     double temperature;
     double humidity;
-    int light_level;
-    int battery_level;
+    unsigned int light_level;
+    unsigned int battery_level;
     void printMeasurement()
     {
         Serial.println("Moisture: " + String(moisture_percent) + "%");
@@ -84,7 +84,9 @@ Measurement getReadings()
     m.humidity = hdc1080.readHumidity();
 
     // Battery Reading
-    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &m.battery_level); // this will be out of 4095
+    int battery_level;
+    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
+    m.battery_level = battery_level;                                             // Can't put unsigned int into function above
 
     // Disable the Power Rail
     digitalWrite(power_rail, LOW);
@@ -101,10 +103,10 @@ boolean saveReading(Measurement m)
     // Commit to memory
 
     EEPROM.writeInt(base_addr, m.moisture_percent);
-    EEPROM.writeDouble(base_addr + sizeof(int), m.temperature);
-    EEPROM.writeDouble(base_addr + sizeof(int) + sizeof(double), m.humidity);
-    EEPROM.writeInt(base_addr + sizeof(int) + 2 * sizeof(double), m.light_level);
-    EEPROM.writeInt(base_addr + 2 * sizeof(int) + 2 * sizeof(double), m.battery_level);
+    EEPROM.writeDouble(base_addr + sizeof(unsigned int), m.temperature);
+    EEPROM.writeDouble(base_addr + sizeof(unsigned int) + sizeof(double), m.humidity);
+    EEPROM.writeInt(base_addr + sizeof(unsigned int) + 2 * sizeof(double), m.light_level);
+    EEPROM.writeInt(base_addr + 2 * sizeof(unsigned int) + 2 * sizeof(double), m.battery_level);
 
     EEPROM.writeInt(0, measurement_progress); // update the number of readings taken so far
 
@@ -121,10 +123,10 @@ void printReadings()
         Measurement m;
         int base_addr = measurement_memory_start + numReadings * sizeof(Measurement);
         m.moisture_percent = EEPROM.readInt(base_addr);
-        m.temperature = EEPROM.readDouble(base_addr + sizeof(int));
-        m.humidity = EEPROM.readDouble(base_addr + sizeof(int) + sizeof(double));
-        m.light_level = EEPROM.readInt(base_addr + sizeof(int) + 2 * sizeof(double));
-        m.battery_level = EEPROM.readInt(base_addr + 2 * sizeof(int) + 2 * sizeof(double));
+        m.temperature = EEPROM.readDouble(base_addr + sizeof(unsigned int));
+        m.humidity = EEPROM.readDouble(base_addr + sizeof(unsigned int) + sizeof(double));
+        m.light_level = EEPROM.readInt(base_addr + sizeof(unsigned int) + 2 * sizeof(double));
+        m.battery_level = EEPROM.readInt(base_addr + 2 * sizeof(unsigned int) + 2 * sizeof(double));
         m.printMeasurement();
         delete &m;
     }
@@ -133,7 +135,7 @@ void printReadings()
 // clears all readings from memory (sets them to 0)
 void clearReadings()
 {
-    for (int i = 0; i < 128; i++)
+    for (int i = 0; i < 64; i++)
         EEPROM.writeInt(i * sizeof(double), 0);
     EEPROM.commit();
 }

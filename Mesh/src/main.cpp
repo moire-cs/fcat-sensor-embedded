@@ -18,8 +18,8 @@ struct timeval tv_now;
 struct timeval start;
 
 void rhSetup();
-void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runReceiver(uint16_t time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
 void setup()
 {
@@ -40,6 +40,7 @@ void setup()
 
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
     // add current thread to WDT watch
+
     EEPROM.begin(EEPROM_SIZE);
     measureSetup();
     rhSetup();
@@ -47,37 +48,33 @@ void setup()
                    " INIT ---------------- ");
 }
 
-long _lastSend = 0, sendInterval_ = 3000; // send every 10 seconds
 uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
 void loop()
 {
-    getReadings();
-    String packetInfo = "Sending packet: " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
-    Serial.println(packetInfo);
-    gettimeofday(&tv_now, NULL);
-    boolean isFull = saveReadings(&tv_now);
+    // It wakes and starts here (always takes a measurement upon waking up)
+    Measurement m = getReadings();
+    m.printMeasurement();            // Prints measurement (this will not be needed later)
+    boolean isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
 
-    if (!isFull)
+    // change to sending mode if readings are full AND this is not the endnode
+    mode_ = (isFull && selfAddress_ != ENDNODE_ADDRESS) ? SENDING_MODE : SENSING_MODE;
+
+    if (mode_ == SENSING_MODE)
     {
         Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
+        gettimeofday(&tv_now, NULL); // get time of day
+        // Calculates time it takes between startup and now
         uint64_t sleepTime = ((timer + start.tv_sec - tv_now.tv_sec)) * microseconds + start.tv_usec - tv_now.tv_usec;
         Serial.println("Sleeping at: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds and for: " + String((double)sleepTime / microseconds) + " seconds");
         esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
         esp_deep_sleep_start();
     }
-    printReadings();
+
+    printReadings(); // unnecessary later
 
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-
-    // Serial.println(String(millis() - _lastSend));
-    // Serial.println(selfAddress_ != ENDNODE_ADDRESS);
-    if ((isFull) &&
-        selfAddress_ != ENDNODE_ADDRESS) // was ENDNODE_ADDRESS, could be targetAddress_
-    {
-        mode_ = SENDING_MODE;
-    }
 
     if (mode_ == SENDING_MODE)
     {
@@ -88,20 +85,22 @@ void loop()
         Serial.println(packetInfo);
         Serial.printf("Sending data to %d...", targetAddress_);
         runSending(&packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
-        // _lastSend = millis();
+
+        // Prepare for new readings (would be next day)
         isFull = false;
+        clearReadings();
+
         mode_ = RECEIVING_MODE;
     }
 
     if (mode_ == RECEIVING_MODE)
     {
-        runReceiver(_msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+        // We need to be receiving for a random time
+        uint16_t wait_time = random(1000, 5000);
+        runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     }
     esp_task_wdt_reset();
 
-    // Prepare for new readings (would be next day)
-    clearReadings();
-    // tv_now = {0, 0};
     Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer * microseconds);
     esp_deep_sleep_start();

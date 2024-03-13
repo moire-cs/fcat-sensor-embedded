@@ -12,3 +12,19 @@ Integer: defaultPower
         - Do we want dynamic power to radio?
 
 */
+
+Memory Layout:
+
+Total: 512 bytes
+
+The first 8 bytes:
+2 integers
+1: Measurement count
+2: Unknown Currently
+
+Measurement (28 bytes):
+Moisture: 4 bytes
+Temperature: 8 bytes
+Humidity: 8 bytes
+Light: 4 bytes
+Battery: 4 bytes

@@ -11,6 +11,26 @@
 
 ClosedCube_HDC1080 hdc1080;
 
+int measurement_memory_start = 8; // first 8 bytes are reserved
+
+class Measurement
+{
+public:
+    int moisture_percent;
+    double temperature;
+    double humidity;
+    int light_level;
+    int battery_level;
+    void printMeasurement()
+    {
+        Serial.println("Moisture: " + String(moisture_percent) + "%");
+        Serial.println("Temperature: " + String(temperature) + "F");
+        Serial.println("Humidity: " + String(humidity) + "%");
+        Serial.println("Light Level: " + String(light_level));
+        Serial.println("Battery Level: " + String(battery_level) + "mV");
+    }
+};
+
 void measureSetup()
 {
     digitalWrite(GPIO_NUM_26, HIGH);
@@ -32,13 +52,14 @@ void measureSetup()
 
     hdc1080.begin(0x40);
 }
-void getReadings()
+Measurement getReadings()
 {
+
     // Enable the Power Rail
     digitalWrite(power_rail, HIGH);
 
-    // TODO: Do we need this delay (probably not)
-    delay(100);
+    // Create measurement object
+    Measurement m;
 
     // Moisture Reading
     pcnt_counter_clear(PCNT_UNIT_0);
@@ -50,63 +71,69 @@ void getReadings()
     pcnt_counter_pause(PCNT_UNIT_0);
     // TODO: Take time here
     // TODO: calculate difference
-    hdc1080.begin(0x40);
-    readings[0] = (double)moisture_count;
+    m.moisture_percent = moisture_count;
 
-    // Light Reading
-    // int light_val = (int)(100 * analogRead(light) / 4095);
-    double light_val = (double)analogRead(light);
-    readings[1] = light_val;
+    // Light Level
+    m.light_level = analogRead(light); // this will be out of 4095
 
     // Temperature/Humidity Reading
+    hdc1080.begin(0x40);
     // TODO: Do we need to begin this every time
     delay(100);
-    readings[2] = hdc1080.readTemperature() * 1.8 + 32;
-    readings[3] = hdc1080.readHumidity();
+    m.temperature = hdc1080.readTemperature() * 1.8 + 32;
+    m.humidity = hdc1080.readHumidity();
 
     // Battery Reading
-    int battery_level = 0;
-    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level);
-    readings[4] = (battery_level / 4095.0) * 3.3;
+    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &m.battery_level); // this will be out of 4095
 
     // Disable the Power Rail
     digitalWrite(power_rail, LOW);
+    // saveReadings(m);
+    return m;
 };
 
-// writes sensor readings to flash memory (120 bytes)
-boolean saveReadings(timeval *tv_now)
+// writes sensor readings to flash memory
+boolean saveReading(Measurement m)
 {
-    int base_addr = ((int)floor(tv_now->tv_sec / timer)) % 3;
+    int measurement_progress = EEPROM.readInt(0);                                          // get number of readings taken so far
+    int base_addr = measurement_progress * sizeof(Measurement) + measurement_memory_start; // base address for the next reading
+    measurement_progress++;                                                                // increment the number of readings taken so far
+    // Commit to memory
 
-    for (int i = 0; i < 5; i++)
-    {
-        EEPROM.writeDouble((i + base_addr * 5) * sizeof(double), readings[i]);
-    }
+    EEPROM.writeInt(base_addr, m.moisture_percent);
+    EEPROM.writeDouble(base_addr + sizeof(int), m.temperature);
+    EEPROM.writeDouble(base_addr + sizeof(int) + sizeof(double), m.humidity);
+    EEPROM.writeInt(base_addr + sizeof(int) + 2 * sizeof(double), m.light_level);
+    EEPROM.writeInt(base_addr + 2 * sizeof(int) + 2 * sizeof(double), m.battery_level);
+
+    EEPROM.writeInt(0, measurement_progress); // update the number of readings taken so far
+
     EEPROM.commit();
-    return base_addr == 2;
+
+    return measurement_progress == num_measurements; // returns true if measurement count is over
+    // might need a consideration for the time
 }
 
-// prints all of the 3 readings from memory
 void printReadings()
 {
     for (int numReadings = 0; numReadings < 3; numReadings++)
     {
-        double tempReadings[5] = {0, 0, 0, 0, 0};
-        for (int i = 0; i < 5; i++)
-        {
-            tempReadings[i] = EEPROM.readDouble((i + numReadings * 5) * sizeof(double));
-        }
-        String packetInfo = "Packet " + String(numReadings) + ": " + String(tempReadings[0]) + "%M " + String(tempReadings[2]) + "F " + tempReadings[3] + "%H " + tempReadings[1] + "%L " + tempReadings[4] + " mV";
-        Serial.println(packetInfo);
+        Measurement m;
+        int base_addr = measurement_memory_start + numReadings * sizeof(Measurement);
+        m.moisture_percent = EEPROM.readInt(base_addr);
+        m.temperature = EEPROM.readDouble(base_addr + sizeof(int));
+        m.humidity = EEPROM.readDouble(base_addr + sizeof(int) + sizeof(double));
+        m.light_level = EEPROM.readInt(base_addr + sizeof(int) + 2 * sizeof(double));
+        m.battery_level = EEPROM.readInt(base_addr + 2 * sizeof(int) + 2 * sizeof(double));
+        m.printMeasurement();
+        delete &m;
     }
 }
 
 // clears all readings from memory (sets them to 0)
 void clearReadings()
 {
-    for (int i = 0; i < 15; i++)
-    {
-        EEPROM.writeDouble(i * sizeof(double), 0);
-    }
+    for (int i = 0; i < 128; i++)
+        EEPROM.writeInt(i * sizeof(double), 0);
     EEPROM.commit();
 }

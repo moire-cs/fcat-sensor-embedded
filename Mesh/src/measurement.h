@@ -33,7 +33,7 @@ public:
 
 void measureSetup()
 {
-    digitalWrite(GPIO_NUM_26, HIGH);
+    ENABLE_ACC_RAIL();
 
     pcnt_unit_t unit = PCNT_UNIT_0;
 
@@ -56,7 +56,7 @@ Measurement getReadings()
 {
 
     // Enable the Power Rail
-    digitalWrite(power_rail, HIGH);
+    ENABLE_ACC_RAIL();
 
     // Create measurement object
     Measurement m;
@@ -89,7 +89,7 @@ Measurement getReadings()
     m.battery_level = battery_level;                                             // Can't put unsigned int into function above
 
     // Disable the Power Rail
-    digitalWrite(power_rail, LOW);
+    DISABLE_ACC_RAIL();
     // saveReadings(m);
     return m;
 };

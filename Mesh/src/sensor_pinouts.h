@@ -27,3 +27,12 @@ int16_t moisture_count = 0x10;        // Do we need 16? or is 0x00 ok
 int counter = 0;
 //  M  T  H  L  B
 // double readings[5] = {0, 0, 0, 0, 0};
+
+void ENABLE_ACC_RAIL()
+{
+    digitalWrite(power_rail, HIGH);
+}
+void DISABLE_ACC_RAIL()
+{
+    digitalWrite(power_rail, LOW);
+}

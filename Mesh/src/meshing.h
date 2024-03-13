@@ -1,10 +1,9 @@
-// #include "pinouts_and_constants.h"
-void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
+void runReceiver(uint16_t wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     // while at it, wait for a message from other nodes
     Serial.println("Receiving mode active");
 
-    if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 3000, _msgFrom))
+    if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom))
     {
         char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
@@ -30,11 +29,11 @@ void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom,
     }
 }
 
-void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
+void runSending(String *packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     uint8_t _err =
-        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(&packetInfo[0]),
-                                  packetInfo.length(), targetAddress_);
+        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(packetInfo),
+                                  packetInfo->length(), targetAddress_);
     if (_err == RH_ROUTER_ERROR_NONE)
     {
         // message successfully be sent to the target node, or next neighboring

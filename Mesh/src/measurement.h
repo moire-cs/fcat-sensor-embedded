@@ -97,7 +97,7 @@ Measurement getReadings()
 // writes sensor readings to flash memory
 boolean saveReading(Measurement m)
 {
-    int measurement_progress = EEPROM.readInt(0);                                          // get number of readings taken so far
+    unsigned int measurement_progress = EEPROM.readInt(0);                                 // get number of readings taken so far
     int base_addr = measurement_progress * sizeof(Measurement) + measurement_memory_start; // base address for the next reading
     measurement_progress++;                                                                // increment the number of readings taken so far
     // Commit to memory
@@ -116,6 +116,7 @@ boolean saveReading(Measurement m)
     // might need a consideration for the time
 }
 
+// prints all stored readings
 void printReadings()
 {
     for (int numReadings = 0; numReadings < 3; numReadings++)

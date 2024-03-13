@@ -18,9 +18,12 @@ Memory Layout:
 Total: 512 bytes
 
 The first 8 bytes:
-2 integers
-1: Measurement count
-2: Unknown Currently
+
+2 bytes: Measurement count
+6 bytes: Unknown Currently
+
+Could use this for 4 unsigned integers
+
 
 Measurement             (22 bytes):
 Moisture: 2 bytes       (unsigned int)

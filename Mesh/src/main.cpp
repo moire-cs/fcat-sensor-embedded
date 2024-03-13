@@ -79,10 +79,8 @@ void loop()
     if (mode_ == SENDING_MODE)
     {
         // Send a message to another rhmesh node
-        // TODO: Take data here
         // TODO: Send our data here
-        String packetInfo = "Sending packet: " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
-        Serial.println(packetInfo);
+        String packetInfo = "Hello"; // temp message
         Serial.printf("Sending data to %d...", targetAddress_);
         runSending(&packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 

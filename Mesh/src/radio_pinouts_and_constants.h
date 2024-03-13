@@ -1,7 +1,4 @@
 #include <RH_RF95.h>
-// Sensor Readings
-//                    M  T  H  L  B
-double readings[5] = {0, 0, 0, 0, 0};
 
 // Flash Memory Allocation
 #define EEPROM_SIZE 120 // 5 readings * 8 bytes (double) * 3 packets = 120 bytes

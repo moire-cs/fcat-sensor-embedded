@@ -3,6 +3,10 @@
 // Flash Memory Allocation
 #define EEPROM_SIZE 120 // 5 readings * 8 bytes (double) * 3 packets = 120 bytes
 
+// For Measurements
+
+#define MAX_MEASUREMENTS 24                      // max number of measurements to take in a set time
+
 // For Device Sleep
 uint64_t time_period = 40;                       // 40 seconds
 #define num_measurements 4                       // num measurements to take in a set time

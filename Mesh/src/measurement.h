@@ -11,11 +11,12 @@
 
 ClosedCube_HDC1080 hdc1080;
 
-int measurement_memory_start = 8; // first 8 bytes are reserved
+RTC_DATA_ATTR unsigned int measurement_count = 0; // unsure if this will just stay as 0, so we need to check
 
 class Measurement
 {
 public:
+    unsigned int measurement_num;
     unsigned int moisture_percent;
     double temperature;
     double humidity;
@@ -23,13 +24,20 @@ public:
     unsigned int battery_level;
     void printMeasurement()
     {
+        Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(measurement_num));
         Serial.println("Moisture: " + String(moisture_percent) + "%");
         Serial.println("Temperature: " + String(temperature) + "F");
         Serial.println("Humidity: " + String(humidity) + "%");
         Serial.println("Light Level: " + String(light_level));
         Serial.println("Battery Level: " + String(battery_level) + "mV");
     }
+    boolean notEmpty()
+    {
+        return measurement_num < num_measurements;
+    }
 };
+
+RTC_DATA_ATTR Measurement measurements[MAX_MEASUREMENTS]; // measurements stored in RTC memory
 
 void measureSetup()
 {
@@ -90,53 +98,38 @@ Measurement getReadings()
 
     // Disable the Power Rail
     DISABLE_ACC_RAIL();
-    // saveReadings(m);
+
+    m.measurement_num = measurement_count;
     return m;
 };
 
-// writes sensor readings to flash memory
+// writes sensor readings to RTC memory
 boolean saveReading(Measurement m)
 {
-    unsigned int measurement_progress = EEPROM.readInt(0);                                 // get number of readings taken so far
-    int base_addr = measurement_progress * sizeof(Measurement) + measurement_memory_start; // base address for the next reading
-    measurement_progress++;                                                                // increment the number of readings taken so far
-    // Commit to memory
+    measurements[measurement_count] = m;
+    measurement_count++; // increment the number of readings taken so far
 
-    EEPROM.writeInt(base_addr, m.moisture_percent);
-    EEPROM.writeDouble(base_addr + sizeof(unsigned int), m.temperature);
-    EEPROM.writeDouble(base_addr + sizeof(unsigned int) + sizeof(double), m.humidity);
-    EEPROM.writeInt(base_addr + sizeof(unsigned int) + 2 * sizeof(double), m.light_level);
-    EEPROM.writeInt(base_addr + 2 * sizeof(unsigned int) + 2 * sizeof(double), m.battery_level);
-
-    EEPROM.writeInt(0, measurement_progress); // update the number of readings taken so far
-
-    EEPROM.commit();
-
-    return measurement_progress == num_measurements; // returns true if measurement count is over
+    return measurement_count == num_measurements; // returns true if measurement count is over
     // might need a consideration for the time
 }
 
 // prints all stored readings
 void printReadings()
 {
-    for (int numReadings = 0; numReadings < 3; numReadings++)
+    for (Measurement m : measurements)
     {
-        Measurement m;
-        int base_addr = measurement_memory_start + numReadings * sizeof(Measurement);
-        m.moisture_percent = EEPROM.readInt(base_addr);
-        m.temperature = EEPROM.readDouble(base_addr + sizeof(unsigned int));
-        m.humidity = EEPROM.readDouble(base_addr + sizeof(unsigned int) + sizeof(double));
-        m.light_level = EEPROM.readInt(base_addr + sizeof(unsigned int) + 2 * sizeof(double));
-        m.battery_level = EEPROM.readInt(base_addr + 2 * sizeof(unsigned int) + 2 * sizeof(double));
-        m.printMeasurement();
-        delete &m;
+        if (m.notEmpty())
+            m.printMeasurement();
     }
 }
 
 // clears all readings from memory (sets them to 0)
 void clearReadings()
 {
-    for (int i = 0; i < 64; i++)
-        EEPROM.writeInt(i * sizeof(double), 0);
-    EEPROM.commit();
+    // I think this clears it, but it might not. Do we need to clear it?
+    Measurement m;
+    for (int i = 0; i < MAX_MEASUREMENTS; i++)
+    {
+        measurements[i] = m;
+    }
 }

@@ -12,7 +12,7 @@
 #include "radio_pinouts_and_constants.h"
 #include "meshing.h"
 #include "measurement.h"
-#include <EEPROM.h>
+
 
 struct timeval tv_now;
 struct timeval start;
@@ -41,7 +41,6 @@ void setup()
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
     // add current thread to WDT watch
 
-    EEPROM.begin(EEPROM_SIZE);
     measureSetup();
     rhSetup();
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +

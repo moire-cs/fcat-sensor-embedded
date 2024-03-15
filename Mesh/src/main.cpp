@@ -13,7 +13,6 @@
 #include "meshing.h"
 #include "measurement.h"
 
-
 struct timeval tv_now;
 struct timeval start;
 
@@ -97,7 +96,7 @@ void loop()
         runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     }
     esp_task_wdt_reset();
-
+    gettimeofday(&tv_now, NULL);
     Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer * microseconds);
     esp_deep_sleep_start();

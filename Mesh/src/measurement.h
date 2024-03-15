@@ -11,7 +11,7 @@
 
 ClosedCube_HDC1080 hdc1080;
 
-RTC_DATA_ATTR unsigned int measurement_count = 0; // unsure if this will just stay as 0, so we need to check
+RTC_DATA_ATTR unsigned int measurement_count = 1; // unsure if this will just stay as 0, so we need to check
 
 class Measurement
 {
@@ -31,9 +31,10 @@ public:
         Serial.println("Light Level: " + String(light_level));
         Serial.println("Battery Level: " + String(battery_level) + "mV");
     }
-    boolean notEmpty()
+    boolean isEmpty()
     {
-        return measurement_num < num_measurements;
+        return measurement_num == 0;
+        // return measurement_num < num_measurements;
     }
 };
 
@@ -106,7 +107,7 @@ Measurement getReadings()
 // writes sensor readings to RTC memory
 boolean saveReading(Measurement m)
 {
-    measurements[measurement_count] = m;
+    measurements[measurement_count - 1] = m;
     measurement_count++; // increment the number of readings taken so far
 
     return measurement_count == num_measurements; // returns true if measurement count is over
@@ -118,18 +119,21 @@ void printReadings()
 {
     for (Measurement m : measurements)
     {
-        if (m.notEmpty())
-            m.printMeasurement();
+
+        if (m.isEmpty())
+            break;
+
+        m.printMeasurement();
     }
 }
 
 // clears all readings from memory (sets them to 0)
 void clearReadings()
 {
-    // I think this clears it, but it might not. Do we need to clear it?
     Measurement m;
     for (int i = 0; i < MAX_MEASUREMENTS; i++)
     {
         measurements[i] = m;
     }
+    measurement_count = 1;
 }

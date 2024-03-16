@@ -66,7 +66,7 @@ void runSender(String *packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, 
     }
 }
 
-void runGatewayReceiver(uint16_t wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
+void runGatewayReceiver(int wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
 
     Serial.println("Receiving mode active");

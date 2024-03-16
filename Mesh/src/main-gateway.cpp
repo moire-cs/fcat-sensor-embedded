@@ -15,11 +15,12 @@
 unsigned long epochTime;
 
 void rhSetup();
-void runGatewayReceiver(uint16_t wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void cycle();
+void runGatewayReceiver(int wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runGatewaySender(String *packetInfo, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
-time_t start;
-time_t end;
+struct timeval start;
+struct timeval end;
 void setup()
 {
     Serial.begin(115200);
@@ -73,7 +74,7 @@ void loop()
     cycle();
 
     gettimeofday(&end, NULL);
-    unsigned long time_taken = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
+    uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(gatewaySleep * hours_to_seconds * microseconds - time_taken); // takes into account time between start and sleep
     esp_deep_sleep_start();
 }

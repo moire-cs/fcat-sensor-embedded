@@ -17,7 +17,7 @@ struct timeval tv_now;
 struct timeval start;
 
 void rhSetup();
-void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runSender(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runReceiver(uint16_t time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
 void setup()
@@ -80,7 +80,7 @@ void loop()
         // TODO: Send our data here
         String packetInfo = "Hello"; // temp message
         Serial.printf("Sending data to %d...", targetAddress_);
-        runSending(&packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+        runSender(&packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
         // Prepare for new readings (would be next day)
         isFull = false;
@@ -91,6 +91,7 @@ void loop()
 
     if (mode_ == RECEIVING_MODE)
     {
+        Serial.println("Receiving mode active");
         // We need to be receiving for a random time
         uint16_t wait_time = random(1000, 5000);
         runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);

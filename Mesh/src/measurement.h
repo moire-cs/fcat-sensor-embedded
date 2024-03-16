@@ -16,6 +16,7 @@ int measurement_memory_start = 8; // first 8 bytes are reserved
 class Measurement
 {
 public:
+    int timestamp;
     unsigned int moisture_percent;
     double temperature;
     double humidity;

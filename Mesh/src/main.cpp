@@ -12,7 +12,6 @@
 #include "radio_pinouts_and_constants.h"
 #include "meshing.h"
 #include "measurement.h"
-#include <EEPROM.h>
 
 struct timeval tv_now;
 struct timeval start;
@@ -41,7 +40,6 @@ void setup()
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
     // add current thread to WDT watch
 
-    EEPROM.begin(EEPROM_SIZE);
     measureSetup();
     rhSetup();
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
@@ -98,7 +96,7 @@ void loop()
         runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     }
     esp_task_wdt_reset();
-
+    gettimeofday(&tv_now, NULL);
     Serial.println("Sleeping: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds");
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(timer * microseconds);
     esp_deep_sleep_start();

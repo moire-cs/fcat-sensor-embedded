@@ -26,6 +26,8 @@ Could use this for 4 unsigned integers
 
 
 Measurement             (22 bytes):
+Timestamp: 4 bytes      (unsigned long)
+Num: 2 bytes            (unsigned int)
 Moisture: 2 bytes       (unsigned int)
 Temperature: 8 bytes    (double)
 Humidity: 8 bytes       (double)

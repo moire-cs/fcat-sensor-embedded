@@ -16,7 +16,7 @@ RTC_DATA_ATTR unsigned int measurement_count = 1; // unsure if this will just st
 class Measurement
 {
 public:
-    int timestamp;
+    unsigned long timestamp;
     unsigned int measurement_num;
     unsigned int moisture_percent;
     double temperature;

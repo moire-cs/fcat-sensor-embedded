@@ -8,7 +8,7 @@
 #define MAX_MEASUREMENTS 24 // max number of measurements to take in a set time
 
 // For Device Sleep
-uint64_t time_period = 0;                              // 40 seconds
+uint64_t time_period = 30;                             // 40 seconds
 #define num_measurements 4                             // num measurements to take in a set time
 uint64_t timer = time_period / (num_measurements - 1); // (equally spaces out measurements) converted to microseconds in code
 #define microseconds 1000000                           // 1 second in microseconds

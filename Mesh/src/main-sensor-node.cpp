@@ -17,7 +17,7 @@ struct timeval tv_now;
 struct timeval start;
 
 void rhSetup();
-void runSender(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runSender(struct Measurement* packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runReceiver(uint16_t time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
 void setup()
@@ -52,7 +52,7 @@ void loop()
 {
     // It wakes and starts here (always takes a measurement upon waking up)
     Measurement m = getReadings();
-    m.printMeasurement();            // Prints measurement (this will not be needed later)
+    printMeasurement(m);             // Prints measurement (this will not be needed later)
     boolean isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
 
     // change to sending mode if readings are full AND this is not the endnode
@@ -80,7 +80,7 @@ void loop()
         // TODO: Send our data here
         String packetInfo = "Hello"; // temp message
         Serial.printf("Sending data to %d...", targetAddress_);
-        runSender(&packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+        runSender(measurements, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
         // Prepare for new readings (would be next day)
         isFull = false;

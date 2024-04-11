@@ -5,25 +5,30 @@
 #include <Wire.h>
 #include <cstring>
 #include "driver/gpio.h"
-#include "radio_pinouts_and_constants.h"
+// #include "radio_pinouts_and_constants.h"
 #include "meshing.h"
-#include ".env.h"
-#include <WiFi.h>
+// #include ".env.h"
+// #include <WiFi.h>
+// #include <WiFiClientSecure.h>
 #include "time.h"
+#include "gateway-backend.h"
 
 // Variable to save current epoch time
 unsigned long epochTime;
 
 void rhSetup();
+void setupWiFi();
 void cycle();
 void runGatewayReceiver(int wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
-void runGatewaySender(String *packetInfo, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runGatewaySender(unsigned int *settings, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
 struct timeval start;
 struct timeval end;
 void setup()
 {
     Serial.begin(115200);
+
+    setupWiFi();
 
     esp_task_wdt_init(WDT_TIMEOUT, true); // enable panic so ESP32 restarts
     esp_task_wdt_add(NULL);
@@ -87,9 +92,9 @@ void cycle()
 
     if (mode_ == SENDING_MODE)
     {
-        String packetInfo = "Hello"; // temp message
+        unsigned int settings[4] = {time_period, num_measurements, timer, microseconds};
         Serial.printf("Sending data to %d...", targetAddress_);
-        runGatewaySender(&packetInfo, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+        runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
         mode_ = RECEIVING_MODE;
     }

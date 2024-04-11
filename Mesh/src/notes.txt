@@ -15,7 +15,7 @@ Integer: defaultPower
 
 Memory Layout:
 
-Total: 512 bytes
+Total: 8 kilobytes
 
 The first 8 bytes:
 
@@ -25,9 +25,25 @@ The first 8 bytes:
 Could use this for 4 unsigned integers
 
 
-Measurement             (22 bytes):
+Measurement             (20 bytes):
+TimeStamp: 4 bytes      (unsigned long)
+Number: 2 bytes         (unsigned int)
 Moisture: 2 bytes       (unsigned int)
-Temperature: 8 bytes    (double)
-Humidity: 8 bytes       (double)
+Temperature: 4 bytes    (float)
+Humidity: 4 bytes       (float)
 Light: 2 bytes          (unsigned int)
 Battery: 2 bytes        (unsigned int)
+
+
+How should we be sending data?
+Maximum packet size of 255 bytes
+Maybe we should be using a struct
+
+Ok. 12 maximum measurements per packet.
+
+
+
+Gateway to Backend:
+HTTP Post request
+
+

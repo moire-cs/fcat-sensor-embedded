@@ -1,11 +1,26 @@
-#include <RH_RF95.h>
+// #include <RH_RF95.h>
 
 // Flash Memory Allocation
 #define EEPROM_SIZE 120 // 5 readings * 8 bytes (double) * 3 packets = 120 bytes
 
 // For Measurements
 
-#define MAX_MEASUREMENTS 24 // max number of measurements to take in a set time
+#define MAX_MEASUREMENTS 24                       // max number of measurements to take in a set time
+RTC_DATA_ATTR unsigned int measurement_count = 1; // unsure if this will just stay as 0, so we need to check
+
+// Using a struct saves memory
+struct Measurement // 20 bytes
+{
+    unsigned long timestamp;        // 4
+    unsigned int measurement_num;   // 2
+    unsigned int moisture_percent;  // 2
+    float temperature;              // 4
+    float humidity;                 // 4
+    unsigned int light_level;       // 2
+    unsigned int battery_level;     // 2
+};
+
+RTC_DATA_ATTR struct Measurement measurements[MAX_MEASUREMENTS]; // measurements stored in RTC memory
 
 // For Device Sleep
 uint64_t time_period = 0;                              // 40 seconds
@@ -13,7 +28,7 @@ uint64_t time_period = 0;                              // 40 seconds
 uint64_t timer = time_period / (num_measurements - 1); // (equally spaces out measurements) converted to microseconds in code
 #define microseconds 1000000                           // 1 second in microseconds
 #define hours_to_seconds 3600
-#define gateway_wait 1000 // 1 hour in seconds
+
 
 // Radio Constants
 #define RF95_FREQ 915.0 // USA and Ecuador
@@ -56,7 +71,8 @@ uint8_t mode_ = SENSING_MODE;
 // make a class to wrap this
 std::string msgSend =
     String("Hello from node " + String(selfAddress_) + "!").c_str();
-std::string msgRcv;
+
+struct Measurement msgRcv[MAX_MEASUREMENTS];
 
 void rhSetup()
 {

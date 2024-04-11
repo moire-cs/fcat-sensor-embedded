@@ -1,21 +1,29 @@
+#define gateway_wait 1000
+void postData(struct Measurement m);
+
 void runReceiver(uint16_t wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     // while at it, wait for a message from other nodes
+    // TODO: I don't believe this node passes on the message
 
     if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom))
     {
+
+        // char buf_[RH_MESH_MAX_MESSAGE_LEN];
         char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
         esp_task_wdt_reset();
         Serial.println("Received a message");
         std::sprintf(buf_, "%s", reinterpret_cast<char *>(_msgRcvBuf));
-        msgRcv = std::string(buf_);
+        // msgRcv = (struct Measurement)buf_; // should be able to set it to this
+        Measurement *received = reinterpret_cast<Measurement *>(&buf_);
 
         // do something with message, for example pass it through a callback
         Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", _msgFrom,
-                      msgRcv.c_str(), RFM95Modem_.lastRssi());
+                      received, RFM95Modem_.lastRssi());
 
-        msgRcv = "";
+        // clears msgRcv
+        // memset(msgRcv, 0, sizeof(msgRcv));
 
         std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
         uint8_t _err = RHMeshManager_.sendtoWait(
@@ -28,11 +36,12 @@ void runReceiver(uint16_t wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen
     }
 }
 
-void runSender(String *packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
+void runSender(struct Measurement *packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
+    // Need to look into sending structs over this
     uint8_t _err =
         RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(packetInfo),
-                                  packetInfo->length(), targetAddress_);
+                                  sizeof(packetInfo), targetAddress_);
     if (_err == RH_ROUTER_ERROR_NONE)
     {
         // message successfully be sent to the target node, or next neighboring
@@ -45,9 +54,9 @@ void runSender(String *packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, 
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
             std::sprintf(buf_, "%s", reinterpret_cast<char *>(_msgRcvBuf));
-            msgRcv = std::string(buf_);
+            Measurement *received = reinterpret_cast<Measurement *>(&buf_);
             Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
-                          msgRcv.c_str(), RFM95Modem_.lastRssi());
+                          received, RFM95Modem_.lastRssi());
         }
         else
         {
@@ -82,14 +91,21 @@ void runGatewayReceiver(int wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufL
             esp_task_wdt_reset();
             Serial.println("Received a message");
             std::sprintf(buf_, "%s", reinterpret_cast<char *>(_msgRcvBuf));
-            msgRcv = std::string(buf_);
+            Measurement *received = reinterpret_cast<Measurement *>(&buf_); // theoretically able to set it to this
+
+            // FIXME: Probably need to do a for loop (not for each)
+            // for (struct Measurement m : &received)
+            // {
+            //     postData(m);
+            // }
 
             // In here, we would want to take that message and do an HTTP POST to the backend with an auth key
             // instead of just sending a reply
             Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", _msgFrom,
-                          msgRcv.c_str(), RFM95Modem_.lastRssi());
+                          received, RFM95Modem_.lastRssi());
 
-            msgRcv = "";
+            // Resets msgRcv
+            // memset(msgRcv, 0, sizeof(msgRcv));
 
             std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
             uint8_t _err = RHMeshManager_.sendtoWait(
@@ -103,11 +119,11 @@ void runGatewayReceiver(int wait_time, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufL
     }
 }
 
-void runGatewaySender(String *packetInfo, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
+void runGatewaySender(unsigned int *settings, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_)
 {
     uint8_t _err =
-        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(packetInfo),
-                                  packetInfo->length(), 255);
+        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t *>(settings),
+                                  sizeof(settings), 255);
     if (_err == RH_ROUTER_ERROR_NONE)
     {
         // message successfully be sent to the target node, or next neighboring
@@ -121,9 +137,10 @@ void runGatewaySender(String *packetInfo, uint8_t *_msgRcvBuf, uint8_t *_msgRcvB
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
             std::sprintf(buf_, "%s", reinterpret_cast<char *>(_msgRcvBuf));
-            msgRcv = std::string(buf_);
+            // Measurement *received = reinterpret_cast<Measurement *>(buf_);
+            String received = String(buf_);
             Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
-                          msgRcv.c_str(), RFM95Modem_.lastRssi());
+                          received, RFM95Modem_.lastRssi());
         }
         else
         {

@@ -11,35 +11,16 @@
 
 ClosedCube_HDC1080 hdc1080;
 
-RTC_DATA_ATTR unsigned int measurement_count = 1; // unsure if this will just stay as 0, so we need to check
 
-class Measurement
+void printMeasurement(struct Measurement m)
 {
-public:
-    unsigned int measurement_num;
-    unsigned int moisture_percent;
-    double temperature;
-    double humidity;
-    unsigned int light_level;
-    unsigned int battery_level;
-    void printMeasurement()
-    {
-        Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(measurement_num));
-        Serial.println("Moisture: " + String(moisture_percent) + "%");
-        Serial.println("Temperature: " + String(temperature) + "F");
-        Serial.println("Humidity: " + String(humidity) + "%");
-        Serial.println("Light Level: " + String(light_level));
-        Serial.println("Battery Level: " + String(battery_level) + "mV");
-    }
-    boolean isEmpty()
-    {
-        return measurement_num == 0;
-        // return measurement_num < num_measurements;
-    }
-};
-
-RTC_DATA_ATTR Measurement measurements[MAX_MEASUREMENTS]; // measurements stored in RTC memory
-
+    Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(m.measurement_num));
+    Serial.println("Moisture: " + String(m.moisture_percent) + "%");
+    Serial.println("Temperature: " + String(m.temperature) + "F");
+    Serial.println("Humidity: " + String(m.humidity) + "%");
+    Serial.println("Light Level: " + String(m.light_level));
+    Serial.println("Battery Level: " + String(m.battery_level) + "mV");
+}
 void measureSetup()
 {
     ENABLE_ACC_RAIL();
@@ -68,7 +49,7 @@ Measurement getReadings()
     ENABLE_ACC_RAIL();
 
     // Create measurement object
-    Measurement m;
+    struct Measurement m;
 
     // Moisture Reading
     pcnt_counter_clear(PCNT_UNIT_0);
@@ -105,9 +86,18 @@ Measurement getReadings()
 };
 
 // writes sensor readings to RTC memory
-boolean saveReading(Measurement m)
+boolean saveReading(struct Measurement m)
 {
-    measurements[measurement_count - 1] = m;
+    // Sets the struct object to be equal
+
+    measurements[measurement_count - 1].battery_level = m.battery_level;
+    measurements[measurement_count - 1].humidity = m.humidity;
+    measurements[measurement_count - 1].light_level = m.light_level;
+    measurements[measurement_count - 1].moisture_percent = m.moisture_percent;
+    measurements[measurement_count - 1].temperature = m.temperature;
+    measurements[measurement_count - 1].timestamp = m.timestamp;
+    measurements[measurement_count - 1].measurement_num = m.measurement_num;
+
     measurement_count++; // increment the number of readings taken so far
 
     return measurement_count == num_measurements; // returns true if measurement count is over
@@ -117,23 +107,19 @@ boolean saveReading(Measurement m)
 // prints all stored readings
 void printReadings()
 {
-    for (Measurement m : measurements)
+    for (struct Measurement m : measurements)
     {
 
-        if (m.isEmpty())
+        if (m.measurement_num == 0)
             break;
 
-        m.printMeasurement();
+        printMeasurement(m);
     }
 }
 
 // clears all readings from memory (sets them to 0)
 void clearReadings()
 {
-    Measurement m;
-    for (int i = 0; i < MAX_MEASUREMENTS; i++)
-    {
-        measurements[i] = m;
-    }
+    memset(measurements, 0, sizeof(measurements));
     measurement_count = 1;
 }

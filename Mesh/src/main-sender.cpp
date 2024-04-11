@@ -8,7 +8,6 @@
 #include <driver/adc.h>
 #include <Wire.h>
 
-
 /*
 
 sda: 21
@@ -36,15 +35,14 @@ ClosedCube_HDC1080 hdc1080;
 
 // For Pulse Counter
 #define WAIT_TIME 500
-#define MIN -21300*WAIT_TIME/1000
-#define MAX -740*WAIT_TIME/1000
+#define MIN -21300 * WAIT_TIME / 1000
+#define MAX -740 * WAIT_TIME / 1000
 int16_t count = 0x00;
 int counter = 0;
 // int* counter = (int*)malloc(sizeof(int));
 // int* counterPtr = &counter;
 
-
-double readings[5] = { 0, 0, 0, 0, 0 };
+double readings[5] = {0, 0, 0, 0, 0};
 
 void setup()
 {
@@ -66,7 +64,6 @@ void setup()
 
     // hdc1080.begin(0x40);
 
-
     pcnt_unit_t unit = PCNT_UNIT_0;
 
     pcnt_config_t pcnt_config = {
@@ -75,8 +72,8 @@ void setup()
         .ctrl_gpio_num = PCNT_PIN_NOT_USED,
         .lctrl_mode = PCNT_MODE_REVERSE, // Reverse counting direction if low
         .hctrl_mode = PCNT_MODE_KEEP,    // Keep the primary counter mode if high
-        .pos_mode = PCNT_COUNT_DIS,   // Count up on the positive edge
-        .neg_mode = PCNT_COUNT_INC,   // Keep the counter value on the negative edge
+        .pos_mode = PCNT_COUNT_DIS,      // Count up on the positive edge
+        .neg_mode = PCNT_COUNT_INC,      // Keep the counter value on the negative edge
         .unit = unit,
         .channel = PCNT_CHANNEL_0,
     };
@@ -98,7 +95,8 @@ void setup()
     // LoRa.setSPIFrequency(1E6);
     // SPI.begin(SCK, MISO, MOSI, nssPin);
 
-    while (!LoRa.begin(915E6)) {
+    while (!LoRa.begin(915E6))
+    {
         Serial.println(".");
         delay(500);
     }
@@ -118,7 +116,6 @@ void getReadings()
 
     delay(100);
     hdc1080.begin(0x40);
-
 
     readings[2] = hdc1080.readTemperature() * 1.8 + 32;
     readings[3] = hdc1080.readHumidity();
@@ -142,15 +139,16 @@ void getReadings()
 
     esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level);
 
-    if (r == ESP_OK) {
+    if (r == ESP_OK)
+    {
         // printf("battery: %d\n", battery_level);
         readings[4] = (battery_level / 4095.0) * 3.3;
     }
-    else if (r == ESP_ERR_TIMEOUT) {
+    else if (r == ESP_ERR_TIMEOUT)
+    {
         printf("ADC2 used by Wi-Fi.\n");
     }
     delay(200);
-
 
     digitalWrite(GPIO_NUM_26, LOW);
     delay(100);
@@ -169,8 +167,6 @@ void loop()
     LoRa.print(packetInfo);
     LoRa.endPacket();
 
-
     counter++;
     delay(500);
 }
-

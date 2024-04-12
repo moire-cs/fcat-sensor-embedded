@@ -62,6 +62,7 @@ void setExternalCrystalAsRTCSource()
     {
         Serial.println("First boot, bootstrap and enable 32k XTAL");
         rtc_clk_32k_enable(true);
+        // rtc_clk_cpu_freq_set_xtal();
     }
     debug_xtal_out_dac1();
 

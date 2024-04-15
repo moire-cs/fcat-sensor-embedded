@@ -1,10 +1,8 @@
-// TODO: Define sensor pinouts
-
 #include <cstdint>
 #define power_rail 26
 
 // Sensor pins
-#define battery 25 // FIXME: Do we need this either if we're using ADC
+#define battery 25
 #define moisture 34
 #define light 35
 

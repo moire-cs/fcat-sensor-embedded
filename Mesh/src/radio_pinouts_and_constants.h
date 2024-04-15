@@ -1,34 +1,29 @@
-// #include <RH_RF95.h>
-
-// Flash Memory Allocation
-#define EEPROM_SIZE 120 // 5 readings * 8 bytes (double) * 3 packets = 120 bytes
-
 // For Measurements
 
 #define MAX_MEASUREMENTS 24                       // max number of measurements to take in a set time
 RTC_DATA_ATTR unsigned int measurement_count = 1; // unsure if this will just stay as 0, so we need to check
 
 // Using a struct saves memory
-struct Measurement // 20 bytes
+struct Measurement // 16 bytes
 {
-    unsigned long timestamp;        // 4
-    unsigned int measurement_num;   // 2
-    unsigned int moisture_percent;  // 2
-    float temperature;              // 4
-    float humidity;                 // 4
-    unsigned int light_level;       // 2
-    unsigned int battery_level;     // 2
+    unsigned int timestamp;        // 2
+    unsigned int moisture_percent; // 2
+    float temperature;             // 4
+    float humidity;                // 4
+    unsigned int light_level;      // 2
+    unsigned int battery_level;    // 2
 };
 
 RTC_DATA_ATTR struct Measurement measurements[MAX_MEASUREMENTS]; // measurements stored in RTC memory
 
 // For Device Sleep
-uint64_t time_period = 0;                              // 40 seconds
-#define num_measurements 4                             // num measurements to take in a set time
-uint64_t timer = time_period / (num_measurements - 1); // (equally spaces out measurements) converted to microseconds in code
+RTC_DATA_ATTR uint64_t duration = 0;                              // hours
+RTC_DATA_ATTR unsigned int num_measurements = 4;                             // num measurements to take in a set time
+RTC_DATA_ATTR unsigned int time_sync_tolerance = 5;
+RTC_DATA_ATTR unsigned int mesh_sync_tolerance = 5;
+
 #define microseconds 1000000                           // 1 second in microseconds
 #define hours_to_seconds 3600
-
 
 // Radio Constants
 #define RF95_FREQ 915.0 // USA and Ecuador
@@ -46,6 +41,18 @@ uint64_t timer = time_period / (num_measurements - 1); // (equally spaces out me
 #define SENDING_MODE 0
 #define RECEIVING_MODE 1
 #define SENSING_MODE 2
+
+
+// For State Machine
+RTC_DATA_ATTR boolean isFull;
+
+#define WAITING 0
+#define SENSING 1
+#define RECEIVING 2
+#define SENDING 3
+// #define SLEEPING 4
+
+RTC_DATA_ATTR unsigned int state = WAITING;
 
 #if defined(SELF_ADDRESS) && defined(TARGET_ADDRESS)
 const uint8_t selfAddress_ = SELF_ADDRESS;
@@ -70,15 +77,27 @@ uint8_t mode_ = SENSING_MODE;
 // these are expected to be global/externally exposed variables, if you plan to
 // make a class to wrap this
 std::string msgSend =
-    String("Hello from node " + String(selfAddress_) + "!").c_str();
+String("Hello from node " + String(selfAddress_) + "!").c_str();
 
+std::string timeSyncRcv;
 struct Measurement msgRcv[MAX_MEASUREMENTS];
 
-void rhSetup()
-{
+void rhSetup() {
     if (!RHMeshManager_.init())
         Serial.println("init failed");
     RFM95Modem_.setTxPower(17, false);
     RFM95Modem_.setFrequency(RF95_FREQ);
     RFM95Modem_.setCADTimeout(500);
+}
+
+std::string* splitn(std::string s, std::string delimiter, int n) {
+    size_t pos = 0;
+    std::string* tokens = new std::string[n];
+    int i = 0;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        tokens[i++] = s.substr(0, pos);
+        s.erase(0, pos + delimiter.length());
+    }
+
+    return tokens;
 }

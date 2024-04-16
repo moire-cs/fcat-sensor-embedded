@@ -82,6 +82,8 @@ void wait() {
         time_sync_tolerance = std::stoi(tokens[2]);
         mesh_sync_tolerance = std::stoi(tokens[3]);
 
+        timer = duration / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
+
         state = SENSING;
         sleep();
     }
@@ -128,8 +130,6 @@ void sense() {
 }
 
 void sleep() {
-    uint64_t timer = duration / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
-
     Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
     gettimeofday(&tv_now, NULL); // get time of day
 

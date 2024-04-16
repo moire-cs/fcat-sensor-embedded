@@ -22,6 +22,8 @@ RTC_DATA_ATTR unsigned int num_measurements = 4;                             // 
 RTC_DATA_ATTR unsigned int time_sync_tolerance = 5;
 RTC_DATA_ATTR unsigned int mesh_sync_tolerance = 5;
 
+RTC_DATA_ATTR uint64_t timer = duration / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
+
 #define microseconds 1000000                           // 1 second in microseconds
 #define hours_to_seconds 3600
 

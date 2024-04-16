@@ -62,8 +62,8 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 #else
 // Topology
 // define the node address
-#define NODE_ADDRESS 3
-#define ENDNODE_ADDRESS 255 // purposefully using the last number
+#define NODE_ADDRESS 0
+#define ENDNODE_ADDRESS 254 // purposefully using the last number (0-254, 255 is broadcast)
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway

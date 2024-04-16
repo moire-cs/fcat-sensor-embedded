@@ -23,9 +23,9 @@ void runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgR
         // clears msgRcv
         // memset(msgRcv, 0, sizeof(msgRcv));
 
-        std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
+        // std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
         uint8_t _err = RHMeshManager_.sendtoWait(
-            reinterpret_cast<uint8_t*>(&_msgRply[0]), _msgRply.size(), *_msgFrom);
+            reinterpret_cast<uint8_t*>(&timeSyncRcv), _msgRcv.size(), RH_BROADCAST_ADDRESS);
         if (_err != RH_ROUTER_ERROR_NONE) {
             Serial.println("Fail to send reply...");
         }

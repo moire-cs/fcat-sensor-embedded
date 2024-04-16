@@ -1,0 +1,8 @@
+14:38:56.972 > 00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+14:38:56.973 > mode:DIO, clock div:2
+14:38:56.975 > load:0x3fff0030,len:1184
+14:38:56.979 > load:0x40078000,len:13232
+14:38:56.981 > load:0x40080400,len:3028
+14:38:56.981 > entry 0x400805e4
+14:38:57.141 > Wakeup: 0.29558
+14:38:57.141 > Sleeping for 10 minutes

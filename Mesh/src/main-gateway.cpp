@@ -5,10 +5,10 @@
 #include <Wire.h>
 #include <cstring>
 #include "driver/gpio.h"
-// #include "radio_pinouts_and_constants.h"
+#include "radio_pinouts_and_constants.h"
 #include "meshing.h"
 // #include ".env.h"
-// #include <WiFi.h>
+#include <WiFi.h>
 // #include <WiFiClientSecure.h>
 #include "time.h"
 // #include "gateway-backend.h"

@@ -1,0 +1,77 @@
+15:21:45.230 > oad:0x3fff0030,len:1184
+15:21:45.230 > load:0x40078000,len:13232
+15:21:45.233 > load:0x40080400,len:3028
+15:21:45.236 > entry 0x400805e4
+15:21:45.520 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:21:45.523 > Sending data to 255... successfull! Awaiting for Reply
+15:21:45.605 > Receiving mode active
+15:21:49.596 > ets Jun  8 2016 00:22:57
+15:21:49.596 > 
+15:21:49.596 > rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:21:49.601 > configsip: 188777542, SPIWP:0xee
+15:21:49.604 > clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:21:49.611 > mode:DIO, clock div:2
+15:21:49.612 > load:0x3fff0030,len:1184
+15:21:49.614 > load:0x40078000,len:13232
+15:21:49.617 > load:0x40080400,len:3028
+15:21:49.621 > entry 0x400805e4
+15:21:49.903 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:21:49.906 > Sending data to 255... successfull! Awaiting for Reply
+15:21:49.989 > Receiving mode active
+15:21:50.036 > Received a message
+15:21:50.037 > ��?
+15:21:50.037 > 5
+15:21:50.037 > [3] "�,�?" (0). Sending a reply...
+15:21:54.081 > Fail to send reply...
+15:21:59.986 > Sleeping for: 63.25 seconds
+15:23:02.228 > ets Jun  8 2016 00:22:57
+15:23:02.228 > 
+15:23:02.228 > rst:0x5 (DEEPSLEEP_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:23:02.234 > configsip: 188777542, SPIWP:0xee
+15:23:02.237 > clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:23:02.245 > mode:DIO, clock div:2
+15:23:02.245 > load:0x3fff0030,len:1184
+15:23:02.248 > load:0x40078000,len:13232
+15:23:02.250 > load:0x40080400,len:3028
+15:23:02.255 > entry 0x400805e4
+15:23:02.421 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:23:02.424 > Sending data to 255... successfull! Awaiting for Reply
+15:23:02.506 > Receiving mode active
+15:23:12.504 > Sleeping for: 63.25 seconds
+15:24:15.530 > ets Jun  8 2016 00:22:57
+15:24:15.531 > 
+15:24:15.531 > rst:0x5 (DEEPSLEEP_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:24:15.535 > configsip: 188777542, SPIWP:0xee
+15:24:15.538 > clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:24:15.547 > mode:DIO, clock div:2
+15:24:15.547 > load:0x3fff0030,len:1184
+15:24:15.549 > load:0x40078000,len:13232
+15:24:15.552 > load:0x40080400,len:3028
+15:24:15.556 > entry 0x400805e4
+15:24:15.723 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:24:15.726 > Sending data to 255... successfull! Awaiting for Reply
+15:24:15.808 > Receiving mode active
+15:24:15.856 > Received a message
+15:24:15.856 > ��?
+15:24:15.856 > 5
+15:24:15.856 > [3] "�,�?" (0). Sending a reply...
+15:24:19.901 > Fail to send reply...
+15:24:25.806 > Sleeping for: 63.25 seconds
+15:25:28.863 > ets Jun  8 2016 00:22:57
+15:25:28.863 > 
+15:25:28.863 > rst:0x5 (DEEPSLEEP_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:25:28.868 > configsip: 188777542, SPIWP:0xee
+15:25:28.871 > clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:25:28.879 > mode:DIO, clock div:2
+15:25:28.879 > load:0x3fff0030,len:1184
+15:25:28.882 > load:0x40078000,len:13232
+15:25:28.885 > load:0x40080400,len:3028
+15:25:28.889 > entry 0x400805e4
+15:25:29.055 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:25:29.058 > Sending data to 255... successfull! Awaiting for Reply
+15:25:29.141 > Receiving mode active
+15:25:29.188 > Received a message
+15:25:29.189 > ��?
+15:25:29.189 > 5
+15:25:29.189 > [3] "�,�?" (0). Sending a reply...
+15:25:33.233 > Fail to send reply...

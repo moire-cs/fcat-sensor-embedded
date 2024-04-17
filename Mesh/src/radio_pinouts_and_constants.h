@@ -73,13 +73,13 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 #else
 // Topology
 // define the node address
-#define NODE_ADDRESS 254 // CHANGE THIS!!!
+#define NODE_ADDRESS 3 // 
 #define ENDNODE_ADDRESS 254 // purposefully using the last number (0-254, 255 is broadcast)
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
-const uint8_t selfAddress_ = NODE_ADDRESS;      // CHANGE THIS!!!
-const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
+const uint8_t selfAddress_ = ENDNODE_ADDRESS;      // CHANGE THIS!!!
+const uint8_t targetAddress_ = NODE_ADDRESS; // integer value
 #endif
 
 // radio driver & message mesh delivery/receipt manager
@@ -93,6 +93,7 @@ std::string msgSend =
 String("Hello from node " + String(selfAddress_) + "!").c_str();
 
 std::string timeSyncRcv;
+std::string rcvMsg;
 struct Measurement msgRcv[MAX_MEASUREMENTS];
 int intRcv[MAX_MEASUREMENTS];
 

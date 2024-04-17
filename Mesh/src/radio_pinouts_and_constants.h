@@ -51,9 +51,9 @@ RTC_DATA_ATTR uint64_t timer = duration * hours_to_seconds / (num_measurements);
 #define RFM95_INT 13
 #endif
 
-#define SENDING_MODE 0
-#define RECEIVING_MODE 1
-#define SENSING_MODE 2
+// #define SENDING_MODE 0
+// #define RECEIVING_MODE 1
+// #define SENSING_MODE 2
 
 
 // For State Machine
@@ -85,7 +85,7 @@ const uint8_t targetAddress_ = NODE_ADDRESS; // integer value
 // radio driver & message mesh delivery/receipt manager
 RH_RF95 RFM95Modem_(RFM95_CS, RFM95_INT);
 RHMesh RHMeshManager_(RFM95Modem_, selfAddress_);
-uint8_t mode_ = SENSING_MODE;
+// uint8_t mode_ = SENSING_MODE;
 
 // these are expected to be global/externally exposed variables, if you plan to
 // make a class to wrap this

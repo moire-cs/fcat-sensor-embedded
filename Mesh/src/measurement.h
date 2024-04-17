@@ -11,17 +11,7 @@
 
 ClosedCube_HDC1080 hdc1080;
 
-void printMeasurement(struct Measurement m)
-{
-    // Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(m.measurement_num));
-    Serial.println("Moisture: " + String(m.moisture_percent) + "%");
-    Serial.println("Temperature: " + String(m.temperature) + "F");
-    Serial.println("Humidity: " + String(m.humidity) + "%");
-    Serial.println("Light Level: " + String(m.light_level));
-    Serial.println("Battery Level: " + String(m.battery_level) + "mV");
-}
-void measureSetup()
-{
+void measureSetup() {
     ENABLE_ACC_RAIL();
 
     pinMode(moisture, INPUT);
@@ -48,9 +38,10 @@ void measureSetup()
     pcnt_unit_config(&pcnt_config);
 
     hdc1080.begin(0x40);
+
+    DISABLE_ACC_RAIL();
 }
-unsigned int readMoisture()
-{
+unsigned int readMoisture() {
 
     // Moisture Reading
     pcnt_counter_clear(PCNT_UNIT_0);
@@ -61,8 +52,7 @@ unsigned int readMoisture()
 
     return abs(moisture_count);
 }
-Measurement getReadings()
-{
+Measurement getReadings() {
 
     // Enable the Power Rail
     ENABLE_ACC_RAIL();
@@ -92,29 +82,27 @@ Measurement getReadings()
 };
 
 // writes sensor readings to RTC memory
-boolean saveReading(struct Measurement m)
-{
+boolean saveReading(struct Measurement m) {
     // Sets the struct object to be equal
 
-    measurements[measurement_count - 1].battery_level = m.battery_level;
-    measurements[measurement_count - 1].humidity = m.humidity;
-    measurements[measurement_count - 1].light_level = m.light_level;
-    measurements[measurement_count - 1].moisture_percent = m.moisture_percent;
-    measurements[measurement_count - 1].temperature = m.temperature;
-    measurements[measurement_count - 1].timestamp = m.timestamp;
+    measurements[measurement_count].battery_level = m.battery_level;
+    measurements[measurement_count].humidity = m.humidity;
+    measurements[measurement_count].light_level = m.light_level;
+    measurements[measurement_count].moisture_percent = m.moisture_percent;
+    measurements[measurement_count].temperature = m.temperature;
+    measurements[measurement_count].timestamp = m.timestamp;
 
     measurement_count++; // increment the number of readings taken so far
+    Serial.printf("Measurement Count: %d\n", measurement_count);
 
     return measurement_count == num_measurements; // returns true if measurement count is over
     // might need a consideration for the time
 }
 
 // prints all stored readings
-void printReadings()
-{
+void printReadings() {
     int i = 0;
-    for (struct Measurement m : measurements)
-    {
+    for (struct Measurement m : measurements) {
         i++;
         if (i > measurement_count)
             break;
@@ -124,8 +112,7 @@ void printReadings()
 }
 
 // clears all readings from memory (sets them to 0)
-void clearReadings()
-{
+void clearReadings() {
     memset(measurements, 0, sizeof(measurements));
-    measurement_count = 1;
+    measurement_count = 0;
 }

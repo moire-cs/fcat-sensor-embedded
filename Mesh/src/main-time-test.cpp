@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <esp_task_wdt.h>
+#include <driver/adc.h>
 
 
 timeval start;
@@ -8,6 +9,11 @@ void setup() {
     Serial.begin(115200);
     gettimeofday(&start, NULL);
     Serial.println("Wakeup: " + String(start.tv_sec) + "." + String(start.tv_usec));
+
+    pinMode(GPIO_NUM_25, INPUT);
+    int battery_level;
+    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
+
 }
 
 void sleep() {

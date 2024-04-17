@@ -1,3 +1,4 @@
+#include <vector> 
 #define gateway_wait 1000
 void postData(struct Measurement m);
 
@@ -69,15 +70,20 @@ void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen
     }
 }
 
-void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+void runSender(String packetInfo, uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // Need to look into sending structs over this
     int arr[7] = { 1,2,3,4,67, 5, 4 };
     // char* test = "Hello World!";
-    std::string test = "Hello World!";
+    // std::string test = "Hello World!";
+    std::string test = packetInfo.c_str();
+    std::vector<uint8_t> bytes(test.begin(), test.end());
+    uint8_t* data = bytes.data();
     uint8_t _err =
-        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&test),
-            sizeof(test), targetAddress_);
-    Serial.println(String(sizeof(arr)));
+        RHMeshManager_.sendtoWait(data,
+            sizeof(bytes), targetAddress_);
+    // Serial.println(String(sizeof(arr)));
+    Serial.println(String(&packetInfo[0]));
+    Serial.println(String(packetInfo.length()));
     // Serial.println(String(packetInfo));
     // Serial.println(String(*packetInfo));
     // Serial.println(sizeof(measurements));
@@ -104,7 +110,7 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
             Serial.println("No reply, is the target node running?");
         }
 
-        esp_task_wdt_reset();
+        // esp_task_wdt_reset();
     }
     else {
         Serial.println(
@@ -113,6 +119,7 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
         // TODO: If nobody received, up power? Maybe a function to do default power applied (starts at low value and increases, then stays at whatever value works)
     }
+    esp_task_wdt_reset();
 }
 
 void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
@@ -125,11 +132,12 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
         if (RHMeshManager_.recvfromAck(_msgRcvBuf, _msgRcvBufLen, _msgFrom)) {
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
-            esp_task_wdt_reset();
+            // esp_task_wdt_reset();
             Serial.println("Received a message");
             std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
-            // Serial.println(String(buf_).c_str());
-            Serial.println(String(_msgRcvBufLen));
+            std::string rcvMsg = String(*buf_).c_str();
+            Serial.printf("%s\n", rcvMsg);
+            Serial.println(String(*_msgRcvBufLen));
             // Measurement* received = reinterpret_cast<Measurement*>(buf_); // theoretically able to set it to this
             // int* received = reinterpret_cast<int*>(_msgRcvBuf);
             // Serial.println(String(*_msgRcvBufLen));

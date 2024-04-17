@@ -18,7 +18,7 @@ timeval start, tv_now;
 
 void rhSetup();
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
-void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runSender(String packetInfo, uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void wait();
 void send();
@@ -108,9 +108,10 @@ void send() {
 
     // Send a message to another rhmesh node
     // TODO: Send our data here
-    String packetInfo = "Hello"; // temp message
+    // String packetInfo = "Hello"; // temp message
     Serial.printf("Sending data to %d...", targetAddress_);
-    runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+    String packetInfo = "Hello World!";
+    runSender(packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
     // Prepare for new readings (would be next day)
     isFull = false;

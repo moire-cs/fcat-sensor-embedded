@@ -23,11 +23,10 @@
 struct timeval tv_now;
 
 void rhSetup();
-void runReceiver(uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
-void runSending(String packetInfo, uint8_t targetAddress_, uint8_t *_msgRcvBuf, uint8_t *_msgRcvBufLen, uint8_t *_msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runReceiver(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runSending(String packetInfo, uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
-void setup()
-{
+void setup() {
 
     Serial.begin(115200);
     esp_wifi_set_mode(WIFI_MODE_NULL);
@@ -48,16 +47,16 @@ void setup()
     Measure_SetUp();
     rhSetup();
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
-                   " INIT ---------------- ");
+        " INIT ---------------- ");
 }
 
 long _lastSend = 0, sendInterval_ = 3000; // send every 10 seconds
 uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
-void loop()
-{
+void loop() {
     getReadings();
-    String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
+    // String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
+    String packetInfo = "Hello World!";
     Serial.println(packetInfo);
 
     uint8_t _msgFrom;
@@ -69,20 +68,18 @@ void loop()
         mode_ = SENDING_MODE;
     }
 
-    if (mode_ == SENDING_MODE)
-    {
+    if (mode_ == SENDING_MODE) {
         // Send a message to another rhmesh node
         // TODO: Take data here
         // TODO: Send our data here
-        String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
+        // String packetInfo = "Sending packet: " + String(counter) + ": " + String(readings[0]) + "%M " + String(readings[2]) + "F " + readings[3] + "%H " + readings[1] + "%L " + readings[4] + " mV";
         Serial.printf("Sending \"%s\" to %d...", packetInfo, targetAddress_);
         runSending(packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
         _lastSend = millis();
         mode_ = RECEIVING_MODE;
     }
 
-    if (mode_ == RECEIVING_MODE)
-    {
+    if (mode_ == RECEIVING_MODE) {
         runReceiver(_msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     }
     esp_task_wdt_reset();

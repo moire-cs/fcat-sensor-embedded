@@ -23,7 +23,7 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 // Topology
 // define the node address
 #define NODE_ADDRESS 3
-#define ENDNODE_ADDRESS 255 // purposefully using the last number
+#define ENDNODE_ADDRESS 254 // purposefully using the last number
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
@@ -32,7 +32,7 @@ const uint8_t targetAddress_ = NODE_ADDRESS;  // integer value
 #endif
 
 //                    M  T  H  L  B
-double readings[5] = {0, 0, 0, 0, 0};
+double readings[5] = { 0, 0, 0, 0, 0 };
 
 // radio driver & message mesh delivery/receipt manager
 RH_RF95 RFM95Modem_(RFM95_CS, RFM95_INT);
@@ -42,11 +42,10 @@ uint8_t mode_ = RECEIVING_MODE;
 // these are expected to be global/externally exposed variables, if you plan to
 // make a class to wrap this
 std::string msgSend =
-    String("Hello from node " + String(selfAddress_) + "!").c_str();
+String("Hello from node " + String(selfAddress_) + "!").c_str();
 std::string msgRcv;
 
-void rhSetup()
-{
+void rhSetup() {
     if (!RHMeshManager_.init())
         Serial.println("init failed");
     RFM95Modem_.setTxPower(17, false);

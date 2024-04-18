@@ -1,0 +1,28 @@
+15:20:32.198 > v:0x00
+15:20:32.198 > mode:DIO, clock div:2
+15:20:32.198 > load:0x3fff0030,len:1184
+15:20:32.200 > load:0x40078000,len:13232
+15:20:32.203 > load:0x40080400,len:3028
+15:20:32.205 > entry 0x400805e4
+15:20:32.489 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:20:32.492 > Sending data to 255... successfull! Awaiting for Reply
+15:20:32.574 > Receiving mode active
+15:20:42.285 > ets Jun  8 2016 00:22:57
+15:20:42.286 > 
+15:20:42.286 > rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:20:42.290 > configsip: 188777542, SPIWP:0xee
+15:20:42.293 > clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:20:42.301 > mode:DIO, clock div:2
+15:20:42.301 > load:0x3fff0030,len:1184
+15:20:42.304 > load:0x40078000,len:13232
+15:20:42.307 > load:0x40080400,len:3028
+15:20:42.311 > entry 0x400805e4
+15:20:42.592 >  ---------------- GATEWAY 254 INIT ---------------- 
+15:20:42.595 > Sending data to 255... successfull! Awaiting for Reply
+15:20:42.678 > Receiving mode active
+15:20:42.725 > Received a message
+15:20:42.726 > ��?
+15:20:42.726 > 5
+15:20:42.726 > [3] "" (0). Sending a reply...
+15:20:46.770 > Fail to send reply...
+15:20:52.675 > Sleeping for: 63.25 seconds

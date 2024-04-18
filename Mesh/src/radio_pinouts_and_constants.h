@@ -14,6 +14,12 @@ struct Measurement // 16 bytes
     unsigned int battery_level;    // 2
 };
 
+struct Packet {
+    unsigned int node_number;
+    uint8_t sensors[4];
+    struct Measurement data[MAX_MEASUREMENTS];
+};
+
 void printMeasurement(struct Measurement m) {
     // Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(m.measurement_num));
     Serial.println("Moisture: " + String(m.moisture_percent) + "%");
@@ -21,6 +27,22 @@ void printMeasurement(struct Measurement m) {
     Serial.println("Humidity: " + String(m.humidity) + "%");
     Serial.println("Light Level: " + String(m.light_level));
     Serial.println("Battery Level: " + String(m.battery_level) + "mV");
+}
+
+void printMeasurements(struct Measurement m[]) {
+    for (int i = 0; i < MAX_MEASUREMENTS; i++) {
+        if (m[i].moisture_percent == 0)
+            break;
+        printMeasurement(m[i]);
+    }
+}
+
+void printPacket(struct Packet p) {
+    Serial.printf("\n==============================================\n");
+    Serial.printf("Node Number: %d\n", p.node_number);
+    Serial.printf("Sensors: %d, %d, %d, %d\n", p.sensors[0], p.sensors[1], p.sensors[2], p.sensors[3]);
+
+    printMeasurements(p.data);
 }
 
 RTC_DATA_ATTR struct Measurement measurements[MAX_MEASUREMENTS]; // measurements stored in RTC memory
@@ -73,13 +95,15 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 #else
 // Topology
 // define the node address
-#define NODE_ADDRESS 3 // 
+#define NODE_ADDRESS_1 0 // 
+#define NODE_ADDRESS_2 1 //
+#define NODE_ADDRESS_3 2 //
 #define ENDNODE_ADDRESS 254 // purposefully using the last number (0-254, 255 is broadcast)
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
-const uint8_t selfAddress_ = ENDNODE_ADDRESS;      // CHANGE THIS!!!
-const uint8_t targetAddress_ = NODE_ADDRESS; // integer value
+const uint8_t selfAddress_ = NODE_ADDRESS_1;      // CHANGE THIS!!!
+const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif
 
 // radio driver & message mesh delivery/receipt manager
@@ -92,10 +116,13 @@ RHMesh RHMeshManager_(RFM95Modem_, selfAddress_);
 std::string msgSend =
 String("Hello from node " + String(selfAddress_) + "!").c_str();
 
-std::string timeSyncRcv;
+String timeSyncRcv;
 std::string rcvMsg;
 struct Measurement msgRcv[MAX_MEASUREMENTS];
 int intRcv[MAX_MEASUREMENTS];
+
+uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
+uint8_t _timeSyncRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
 void rhSetup() {
     if (!RHMeshManager_.init())
@@ -105,21 +132,25 @@ void rhSetup() {
     RFM95Modem_.setCADTimeout(500);
 }
 
-float* splitn(std::string s, std::string delimiter, int n) {
+void splitn(float* tokens, std::string s, std::string delimiter, int n) {
     size_t pos = 0;
-    // std::string* tokens = new std::string[n];
-    // std::string tokens[n];
-    // char* tokens[n];
-    float tokens[n];
+    // Serial.printf("Splitting string: %s\n", s.c_str());
+    // Serial.printf("Delimiter: %s\n", delimiter.c_str());
     int i = 0;
     while ((pos = s.find(delimiter)) != std::string::npos) {
-        tokens[i++] = std::stof(s.substr(0, pos));
-
-        Serial.println("n: " + String(i));
-        Serial.println("Token: " + String(tokens[i]));
+        // Serial.printf("Left: %s\n", s.c_str());
+        // Serial.printf("%s\n", s.substr(0, pos).c_str());
+        // Serial.printf("%0.3f\n", std::stof(s.substr(0, pos)));
+        tokens[i] = std::stof(s.substr(0, pos));
+        i++;
+        // Serial.println("n: " + String(i));
+        // Serial.println("Token: " + String(tokens[i]));
 
         s.erase(0, pos + delimiter.length());
+        // Serial.printf("Right: %s\n", s.c_str());
     }
-
-    return tokens;
+    // Serial.println("END");
+    tokens[n - 1] = std::stof(s);
+    // for (int k = 0; k < n; k++)
+    //     Serial.printf("Token: %0.3f\n", tokens[k]);
 }

@@ -18,7 +18,7 @@ timeval start, tv_now;
 
 void rhSetup();
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
-void runSender(String packetInfo, uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void wait();
 void send();
@@ -44,9 +44,6 @@ void setup() {
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
         " INIT ---------------- ");
 }
-
-uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
-uint8_t _timeSyncRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
 void loop() {
     switch (state) {
@@ -83,16 +80,19 @@ void wait() {
         // "{ "numMeasurements" : "4", "duration" : "24", "syncTimeTolerance" : "5", "meshTimeTolerance" : "5" }"
         // "numMeasurements, duration, syncTimeTolerance, meshTimeTolerance"
         int data_count = 4;
-        float* tokens = splitn(timeSyncRcv, ", ", data_count);
-
-        // duration = (tokens[0]);
-        // num_measurements = (tokens[1]);
-        // time_sync_tolerance = (tokens[2]);
-        // mesh_sync_tolerance = (tokens[3]);
-        duration = 0.02;
-        num_measurements = 2;
-        time_sync_tolerance = 0.005;
-        mesh_sync_tolerance = 0.005;
+        float* tokens = (float*)malloc(sizeof(float) * data_count);
+        splitn(tokens, timeSyncRcv.c_str(), ", ", data_count);
+        // for (int k = 0; k < data_count; k++) {
+        //     Serial.printf("%0.3f, ", tokens[k]);
+        // }
+        duration = (tokens[0]);
+        num_measurements = (tokens[1]);
+        time_sync_tolerance = (tokens[2]);
+        mesh_sync_tolerance = (tokens[3]);
+        // duration = 0.02;
+        // num_measurements = 2;
+        // time_sync_tolerance = 0.005;
+        // mesh_sync_tolerance = 0.005;
 
         timer = duration * hours_to_seconds / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
 
@@ -111,7 +111,7 @@ void send() {
     // String packetInfo = "Hello"; // temp message
     Serial.printf("Sending data to %d...", targetAddress_);
     String packetInfo = "Hello World!";
-    runSender(packetInfo, targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+    runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
     // Prepare for new readings (would be next day)
     isFull = false;

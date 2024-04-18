@@ -45,7 +45,7 @@ void setup() {
         " INIT ---------------- ");
 }
 
-uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
+// uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
 // Get the current time
 unsigned long getTime() {
@@ -95,15 +95,16 @@ void receive() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-    runGatewayReceiver(10 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+    runGatewayReceiver(15 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 }
 
 void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = duration * hours_to_seconds * microseconds * (1 + 4 * time_sync_tolerance) - time_taken;
+    uint64_t sleepTime = duration * hours_to_seconds * microseconds * (1 + 6 * time_sync_tolerance) - time_taken;
     Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
+    esp_task_wdt_reset();
     esp_deep_sleep_start();
 }

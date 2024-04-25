@@ -9,10 +9,14 @@
 #include "ClosedCube_HDC1080.h"
 #include "esp_wifi.h"
 #include <driver/adc.h>
+#include "node-info.h"
+#include "node-numbers.h"
 #include "radio_pinouts_and_constants.h"
 #include "meshing.h"
+
 #include "measurement.h"
 #include "soc/rtc_cntl_reg.h"
+
 
 timeval start, tv_now;
 
@@ -89,6 +93,7 @@ void wait() {
         num_measurements = (tokens[1]);
         time_sync_tolerance = (tokens[2]);
         mesh_sync_tolerance = (tokens[3]);
+        Serial.printf("%0.4f", duration);
         // duration = 0.02;
         // num_measurements = 2;
         // time_sync_tolerance = 0.005;
@@ -153,6 +158,7 @@ void sleep() {
     // Calculates time it takes between startup and now
     uint64_t sleepTime = ((timer + start.tv_sec - tv_now.tv_sec)) * microseconds + start.tv_usec - tv_now.tv_usec;
     Serial.println("Sleeping at: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds and for: " + String((double)sleepTime / microseconds) + " seconds");
+    RFM95Modem_.sleep(); 
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
     esp_task_wdt_reset();
     esp_deep_sleep_start();

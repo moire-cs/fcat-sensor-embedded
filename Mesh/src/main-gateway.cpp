@@ -11,7 +11,7 @@
 #include "gateway-info.h"
 #include "gateway-meshing.h"
 #include ".env.h"
-#include <WiFi.h>
+// #include <WiFi.h>
 // #include <WiFiClientSecure.h>
 #include "time.h"
 #include "soc/rtc_cntl_reg.h"
@@ -30,6 +30,8 @@ void rhSetup();
 void runTimeSync();
 void receive();
 void sleep();
+std::string getSerialMessage();
+std::string buildTimeSyncMessage();
 void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runGatewaySender(unsigned int* settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 
@@ -40,8 +42,6 @@ void setup() {
     CLEAR_PERI_REG_MASK(RTC_CNTL_BROWN_OUT_REG, RTC_CNTL_BROWN_OUT_RST_ENA);
     Serial.begin(115200);
     gettimeofday(&start, NULL);
-
-    // setupWiFi();
 
     esp_task_wdt_init(WDT_TIMEOUT, true); // enable panic so ESP32 restarts
     esp_task_wdt_add(NULL);
@@ -62,7 +62,6 @@ void setup() {
         " INIT ---------------- ");
 }
 
-// uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
 // Get the current time
 unsigned long getTime() {
@@ -76,24 +75,8 @@ unsigned long getTime() {
     return now;
 }
 
-// Initialize WiFi (Gateway will use it to send data to backend)
-// void initWiFi() {
-//     WiFi.mode(WIFI_STA);
-//     WiFi.begin(ssid, password);
-//     Serial.print("Connecting to WiFi ..");
-//     while (WiFi.status() != WL_CONNECTED) {
-//         Serial.print('.');
-//         delay(1000);
-//     }
-//     Serial.println(WiFi.localIP());
-// }
-
 void loop() {
-    // gettimeofday(&start, NULL);
-    // epochTime = getTime();
 
-    // GET route to receive information from backend (cycle period, num measurements, etc.)
-    // unsigned long gatewaySleep = 24; // hours
     runTimeSync();
     receive();
     sleep();
@@ -101,8 +84,19 @@ void loop() {
 }
 
 void runTimeSync() {
-    cur_times = getTimes();
+    // cur_times = getTimes();
     esp_task_wdt_reset();
+    Serial.printf("CYCLE\n");
+    std::string time_sync_message = getSerialMessage();
+    int data_count = 3;
+    float* tokens = (float*)malloc(sizeof(float) * data_count);
+    splitn(tokens, time_sync_message, ", ", data_count);
+    dur = tokens[0];
+    num_meas = tokens[1];
+    time_sync_tol = tokens[2];
+
+
+    settings = buildTimeSyncMessage();
 
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
@@ -121,9 +115,25 @@ void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = dur * hours_to_seconds * microseconds * (1 + 6 * time_sync_tolerance) - time_taken;
+    uint64_t sleepTime = dur * hours_to_seconds * microseconds - time_taken;
     Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
-    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
+    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime*time_factor); // takes into account time between start and sleep
     esp_task_wdt_reset();
     esp_deep_sleep_start();
+}
+
+std::string getSerialMessage() {
+    bool end = false;
+    std::string content = "";
+    char character;
+     while(!end) {
+          while(Serial.available()) {
+               character = Serial.read();
+               content+= character;
+               if(character == '\n') {
+                    end = true;
+               }
+          }
+     }
+     return content;
 }

@@ -61,6 +61,9 @@ void rhSetup() {
     RFM95Modem_.setCADTimeout(500);
 }
 
+RTC_DATA_ATTR uint64_t curr_time = 0;
+RTC_DATA_ATTR uint64_t last_time = 0;
+
 void splitn(float* tokens, std::string s, std::string delimiter, int n) {
     size_t pos = 0;
     int i = 0;
@@ -69,7 +72,8 @@ void splitn(float* tokens, std::string s, std::string delimiter, int n) {
         i++;
         s.erase(0, pos + delimiter.length());
     }
-    tokens[n - 1] = std::stof(s);
+    last_time = curr_time;
+    curr_time = std::stoull(s);
 }
 
 struct __attribute__((__packed__)) Measurement // 16 bytes

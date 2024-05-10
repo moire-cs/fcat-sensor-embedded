@@ -11,6 +11,8 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
-const uint8_t selfAddress_ = 4;      // CHANGE THIS!!!
+const uint8_t selfAddress_ = 
+4
+;      // CHANGE THIS!!!
 const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif

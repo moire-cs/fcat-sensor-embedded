@@ -6,8 +6,7 @@ node_id=${node_id:-1}
 
 while true; do
     # Edit the 15th line of ../src/node-numbers.h
-    sed -i "15s/.*/const uint8_t selfAddress_ = $node_id;/" ../src/node-numbers.h
-
+    sed -i '' "15s/.*/const uint8_t selfAddress_ = $node_id;/" ./src/node-numbers.h
     # Run platformio commands
     platformio run --target upload --target monitor --environment sensor_node --upload-port /dev/cu.usbserial-10 --monitor-port /dev/cu.usbserial-10
 

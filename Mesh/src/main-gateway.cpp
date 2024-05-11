@@ -31,7 +31,7 @@ void runTimeSync();
 void receive();
 void sleep();
 std::string getSerialMessage();
-std::string buildTimeSyncMessage();
+String buildTimeSyncMessage();
 void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runGatewaySender(unsigned int* settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 

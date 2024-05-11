@@ -54,7 +54,7 @@ void setup() {
     
     int battery_level;
     esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
-    Serial.printf("%0d\n", battery_level);
+    Serial.println(1.27*battery_level*1090/(4095*270));
     digitalWrite(GPIO_NUM_26, LOW);
 
     rhSetup();
@@ -89,15 +89,16 @@ void runTimeSync() {
     Serial.printf("CYCLE\n");
     std::string time_sync_message = getSerialMessage();
     int data_count = 3;
-    float* tokens = (float*)malloc(sizeof(float) * data_count);
-    splitn(tokens, time_sync_message, ", ", data_count);
-    dur = tokens[0];
-    num_meas = tokens[1];
-    time_sync_tol = tokens[2];
-
-
+    if (time_sync_message.length() != 0) {
+        float* tokens = (float*)malloc(sizeof(float) * data_count);
+        splitn(tokens, time_sync_message, ", ", data_count);
+        dur = tokens[0];
+        num_meas = tokens[1];
+        time_sync_tol = tokens[2];
+    }
+    
     settings = buildTimeSyncMessage();
-
+    
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
     Serial.printf("Sending data to %d...", RH_BROADCAST_ADDRESS);
@@ -123,10 +124,16 @@ void sleep() {
 }
 
 std::string getSerialMessage() {
+    Serial.println("Reading Serial");
+
     bool end = false;
     std::string content = "";
     char character;
-     while(!end) {
+    unsigned long time = millis();
+
+    try {
+        
+     while(!end && ((millis() - time) < 1000)) {
           while(Serial.available()) {
                character = Serial.read();
                content+= character;
@@ -135,5 +142,9 @@ std::string getSerialMessage() {
                }
           }
      }
-     return content;
+    } catch (...) {
+        Serial.println("ERROR READING SERIAL!!");
+    }
+    Serial.println("Not reading Serial");
+    return content;
 }

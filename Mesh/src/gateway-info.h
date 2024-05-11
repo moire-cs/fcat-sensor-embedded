@@ -1,7 +1,7 @@
 float demo_time = 10;
 // float dur = 0.01;         up                     // hours
 // float dur = demo_time/((float)hours_to_seconds);
-float dur = 0.01;
+float dur = 0.05;
 unsigned int num_meas = 3;                             // num measurements to take in a set time
 float time_sync_tol = 0.005; // factor
 std::string num_text = std::to_string(dur);

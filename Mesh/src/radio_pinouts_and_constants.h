@@ -8,7 +8,7 @@ RTC_DATA_ATTR unsigned int measurement_count = 0; // unsure if this will just st
 RTC_DATA_ATTR float duration = 0.02;                              // hours
 RTC_DATA_ATTR unsigned int num_measurements = 2;                             // num measurements to take in a set time
 RTC_DATA_ATTR float time_sync_tolerance = 0.005; // factor
-RTC_DATA_ATTR float mesh_sync_tolerance = 0.005; // factor
+RTC_DATA_ATTR int sync_duration = 30 * 1000;
 
 #define microseconds 1000000                           // 1 second in microseconds
 #define hours_to_seconds 3600
@@ -17,7 +17,7 @@ RTC_DATA_ATTR uint64_t timer = duration * hours_to_seconds / (num_measurements);
 
 // Radio Constants
 #define RF95_FREQ 915.0 // USA and Ecuador
-#define WDT_TIMEOUT 15
+#define WDT_TIMEOUT 65
 
 #if defined(RFM95_CS) && defined(RFM95_RST) && defined(RFM95_INT)
 #else

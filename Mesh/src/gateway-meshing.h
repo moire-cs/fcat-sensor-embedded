@@ -18,12 +18,12 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
             // memset(msgRcv, 0, sizeof(msgRcv));
             esp_task_wdt_reset();
-            std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
-            uint8_t _err = RHMeshManager_.sendtoWait(
-                reinterpret_cast<uint8_t*>(&_msgRply[0]), _msgRply.size(), *_msgFrom);
-            if (_err != RH_ROUTER_ERROR_NONE) {
-                Serial.println("Fail to send reply...");
-            }
+            // std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
+            // uint8_t _err = RHMeshManager_.sendtoWait(
+            //     reinterpret_cast<uint8_t*>(&_msgRply[0]), _msgRply.size(), *_msgFrom);
+            // if (_err != RH_ROUTER_ERROR_NONE) {
+            //     Serial.println("Fail to send reply...");
+            // }
             esp_task_wdt_reset();
         }
         esp_task_wdt_reset();

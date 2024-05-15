@@ -19,6 +19,9 @@
 
 
 timeval start, tv_now;
+bool doSleep = true;
+float battery_factor = 0.95;
+int battery_max = 3760; // Battery at 4 V --> (4 * 4095/(3.3 * 1.32)) --> 1.32 is undoing the voltage division
 
 void rhSetup();
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
@@ -31,8 +34,6 @@ void sleep();
 void sense();
 
 void setup() {
-    // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector  
-    // CLEAR_PERI_REG_MASK(RTC_CNTL_BROWN_OUT_REG, RTC_CNTL_BROWN_OUT_RST_ENA);
     gettimeofday(&start, NULL);
     Serial.begin(115200);
     esp_wifi_set_mode(WIFI_MODE_NULL);
@@ -47,6 +48,14 @@ void setup() {
     rhSetup();
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
         " INIT ---------------- ");
+    ENABLE_ACC_RAIL();
+    delay(100);
+    int battery_level;
+    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
+    doSleep = !(battery_level >= (battery_max * battery_factor));
+    Serial.printf("Battery Level: %d\n", battery_level);
+    Serial.println("doSleep: " + String(doSleep));
+    DISABLE_ACC_RAIL();
 }
 
 void loop() {
@@ -67,7 +76,6 @@ void loop() {
         Serial.println("Reached default");
         break;
     }
-
 }
 
 void wait() {
@@ -82,20 +90,22 @@ void wait() {
         
         Serial.println("Received data from: " + String(_msgFrom));
 
-        int data_count = 3;
+        int data_count = 4;
         float* tokens = (float*)malloc(sizeof(float) * data_count);
         splitn(tokens, timeSyncRcv.c_str(), ", ", data_count);
 
         duration = (tokens[0]);
         num_measurements = (tokens[1]);
         time_sync_tolerance = (tokens[2]);
+        sync_duration = (int) (tokens[3]);
         Serial.printf("%0.4f", duration);
+
+        srand(selfAddress_ + curr_time);
 
         timer = duration * hours_to_seconds / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
 
         state = RECEIVING;
     }
-
 }
 
 void send() {
@@ -103,9 +113,6 @@ void send() {
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
-    // Send a message to another rhmesh node
-    // TODO: Send our data here
-    // String packetInfo = "Hello"; // temp message
     Serial.printf("Sending data to %d...", targetAddress_);
     String packetInfo = "Hello World!";
     runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
@@ -124,8 +131,10 @@ void receive() {
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
     Serial.println("Receiving mode active");
+
     // We need to be receiving for a random time
-    uint16_t wait_time = random(1000, 5000);
+    uint16_t wait_time = (rand() % (sync_duration + 1000 + 1)) + 1000;
+    Serial.printf("Wait Time: %d\n", String(wait_time));
     runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     esp_task_wdt_reset();
     state = SENDING;
@@ -133,7 +142,8 @@ void receive() {
 
 void sense() {
     Measurement m = getReadings();
-    printMeasurement(m);             // Prints measurement (this will not be needed later)
+    // printMeasurement(m);  // Prints measurement (this will not be needed later)
+    doSleep = !(m.battery_level >= (battery_max * battery_factor));
     isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
 
     state = (isFull && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
@@ -143,15 +153,28 @@ void sense() {
 }
 
 void sleep() {
-    Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
-    Serial.println("Timer: " + String(timer));
+    // Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
+    // Serial.println("Timer: " + String(timer));
     gettimeofday(&tv_now, NULL); // get time of day
 
     // Calculates time it takes between startup and now
     uint64_t sleepTime = (((timer + start.tv_sec - tv_now.tv_sec)) * microseconds + start.tv_usec - tv_now.tv_usec) * (1-5*time_sync_tolerance);
     Serial.println("Sleeping at: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds and for: " + String((double)sleepTime / microseconds) + " seconds");
     RFM95Modem_.sleep(); 
-    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
+    
     esp_task_wdt_reset();
-    esp_deep_sleep_start();
+    // If battery isn't too charged, sleep
+    if (!doSleep) {
+        unsigned long start = millis();
+        while ((millis() - start) < sleepTime/1000) {
+            delay(1000);
+            esp_task_wdt_reset();
+            Serial.print(".");
+        } 
+    } else {
+        esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
+        esp_task_wdt_reset();
+        esp_deep_sleep_start();
+    }
+    
 }

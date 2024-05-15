@@ -54,25 +54,12 @@ void setup() {
     
     int battery_level;
     esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
-    Serial.println(1.27*battery_level*1090/(4095*270));
+    Serial.println(1.32*3.3*battery_level/(4095));
     digitalWrite(GPIO_NUM_26, LOW);
 
     rhSetup();
     Serial.println(" ---------------- GATEWAY " + String(selfAddress_) +
         " INIT ---------------- ");
-}
-
-
-// Get the current time
-unsigned long getTime() {
-    time_t now;
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) {
-        // Serial.println("Failed to obtain time");
-        return (0);
-    }
-    time(&now);
-    return now;
 }
 
 void loop() {
@@ -84,18 +71,22 @@ void loop() {
 }
 
 void runTimeSync() {
-    // cur_times = getTimes();
+    unsigned int last_dur = dur;
+    
     esp_task_wdt_reset();
     Serial.printf("CYCLE\n");
     std::string time_sync_message = getSerialMessage();
-    int data_count = 3;
+    int data_count = 4;
     if (time_sync_message.length() != 0) {
         float* tokens = (float*)malloc(sizeof(float) * data_count);
         splitn(tokens, time_sync_message, ", ", data_count);
         dur = tokens[0];
         num_meas = tokens[1];
         time_sync_tol = tokens[2];
+        sync_dur = (int) (tokens[3] * 1000);
     }
+
+    cur_times = getTimes(last_dur);
     
     settings = buildTimeSyncMessage();
     
@@ -109,7 +100,7 @@ void receive() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-    runGatewayReceiver(15 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+    runGatewayReceiver(61 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 }
 
 void sleep() {
@@ -118,6 +109,7 @@ void sleep() {
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
     uint64_t sleepTime = dur * hours_to_seconds * microseconds - time_taken;
     Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
+    Serial.printf("Time Factor: %0.4f\n", time_factor);
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime*time_factor); // takes into account time between start and sleep
     esp_task_wdt_reset();
     esp_deep_sleep_start();

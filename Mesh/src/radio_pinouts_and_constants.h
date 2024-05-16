@@ -1,7 +1,7 @@
 // For Measurements
 #include <vector>
 
-#define MAX_MEASUREMENTS 5                       // max number of measurements to take in a set time
+#define MAX_MEASUREMENTS 14                       // max number of measurements to take in a set time
 RTC_DATA_ATTR unsigned int measurement_count = 0; // unsure if this will just stay as 0, so we need to check
 
 // For Device Sleep
@@ -56,7 +56,7 @@ uint8_t _timeSyncRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 void rhSetup() {
     if (!RHMeshManager_.init())
         Serial.println("init failed");
-    RFM95Modem_.setTxPower(17, false);
+    RFM95Modem_.setTxPower(20, false); // 120 mA for transmitting
     RFM95Modem_.setFrequency(RF95_FREQ);
     RFM95Modem_.setCADTimeout(500);
 }

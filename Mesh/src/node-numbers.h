@@ -12,6 +12,6 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 // selfAddress is node
 // targetAddress will be our gateway
 
-const uint8_t selfAddress_ = 10;
+const uint8_t selfAddress_ = ENDNODE_ADDRESS;
 const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif

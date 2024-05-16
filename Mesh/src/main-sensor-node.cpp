@@ -22,6 +22,7 @@ timeval start, tv_now;
 bool doSleep = true;
 float battery_factor = 0.95;
 int battery_max = 3760; // Battery at 4 V --> (4 * 4095/(3.3 * 1.32)) --> 1.32 is undoing the voltage division
+uint16_t wait_time = 0;
 
 void rhSetup();
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
@@ -53,9 +54,12 @@ void setup() {
     int battery_level;
     esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
     doSleep = !(battery_level >= (battery_max * battery_factor));
+    
     Serial.printf("Battery Level: %d\n", battery_level);
     Serial.println("doSleep: " + String(doSleep));
     DISABLE_ACC_RAIL();
+    if (battery_level <= 3560)
+        sleep();
 }
 
 void loop() {
@@ -94,15 +98,15 @@ void wait() {
         float* tokens = (float*)malloc(sizeof(float) * data_count);
         splitn(tokens, timeSyncRcv.c_str(), ", ", data_count);
 
-        duration = (tokens[0]);
-        num_measurements = (tokens[1]);
-        time_sync_tolerance = (tokens[2]);
-        sync_duration = (int) (tokens[3]);
-        Serial.printf("%0.4f", duration);
+        duration = (tokens[0]); // 0.02
+        num_measurements = (tokens[1]); // 2
+        time_sync_tolerance = (tokens[2]); // 0.007
+        sync_duration = (int) (tokens[3]); // 20
+        Serial.printf("%0.4f\n", duration); // 0.0200
 
         srand(selfAddress_ + curr_time);
 
-        timer = duration * hours_to_seconds / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
+        timer = ((int) (duration * hours_to_seconds)) / num_measurements; // (equally spaces out measurements) converted to microseconds in code
 
         state = RECEIVING;
     }
@@ -114,10 +118,12 @@ void send() {
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
     Serial.printf("Sending data to %d...", targetAddress_);
-    String packetInfo = "Hello World!";
     runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
-    // Prepare for new readings (would be next day)
+    Serial.println("Receiving mode active");
+    runReceiver((sync_duration - wait_time) + 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+
+    // Prepare for new readings
     isFull = false;
     clearReadings();
     state = SENSING;
@@ -133,8 +139,7 @@ void receive() {
     Serial.println("Receiving mode active");
 
     // We need to be receiving for a random time
-    uint16_t wait_time = (rand() % (sync_duration + 1000 + 1)) + 1000;
-    Serial.printf("Wait Time: %d\n", String(wait_time));
+    wait_time = (rand() % (sync_duration + 1000 + 1)) + 1000;
     runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
     esp_task_wdt_reset();
     state = SENDING;
@@ -153,24 +158,24 @@ void sense() {
 }
 
 void sleep() {
-    // Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
-    // Serial.println("Timer: " + String(timer));
     gettimeofday(&tv_now, NULL); // get time of day
 
     // Calculates time it takes between startup and now
     uint64_t sleepTime = (((timer + start.tv_sec - tv_now.tv_sec)) * microseconds + start.tv_usec - tv_now.tv_usec) * (1-5*time_sync_tolerance);
     Serial.println("Sleeping at: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds and for: " + String((double)sleepTime / microseconds) + " seconds");
-    RFM95Modem_.sleep(); 
     
     esp_task_wdt_reset();
+    DISABLE_ACC_RAIL();
+    RFM95Modem_.sleep(); 
     // If battery isn't too charged, sleep
     if (!doSleep) {
-        unsigned long start = millis();
-        while ((millis() - start) < sleepTime/1000) {
+        unsigned long start_time_count = millis();
+        while ((millis() - start_time_count) < sleepTime/1000) {
             delay(1000);
             esp_task_wdt_reset();
             Serial.print(".");
-        } 
+        }
+        gettimeofday(&start, NULL); 
     } else {
         esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
         esp_task_wdt_reset();

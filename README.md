@@ -1,15 +1,7 @@
 How to build PlatformIO based project
 =====================================
 
-1. [Install PlatformIO Core](https://docs.platformio.org/page/core.html)
-2. Download [development platform with examples](https://github.com/platformio/platform-espressif32/archive/develop.zip)
-3. Extract ZIP archive
-4. Run these commands:
-
 ```shell
-# Change directory to example
-$ cd platform-espressif32/examples/espidf-arduino-blink
-
 # Build project
 $ pio run
 
@@ -25,3 +17,8 @@ $ pio run -e esp32dev --target upload
 # Clean build files
 $ pio run --target clean
 ```
+
+Development note: Currently, the project is configured to autolaunch the arduino code on startup and run setup() and loop() functions. Alternatively, you can run the code manually by spawning the process.
+
+We are going to want to disable the auto-launch feature in the future as we will want threads with and without arduino code. This can be done in `sdkconfig.defaults` by setting `CONFIG_AUTOSTART_ARDUINO` to `n`.
+

@@ -64,7 +64,7 @@ Measurement getReadings() {
 
     // Light Level
     m.light_level = analogRead(light) * 4095; // this will be out of 4095
-    printf("\n\n%0.5f\n\n", analogRead(light));
+    printf("\n\n%d\n\n", analogRead(light));
     hdc1080.begin(0x40);
     // Temperature/Humidity Reading
     m.temperature = hdc1080.readTemperature() * 1.8 + 32;

@@ -63,11 +63,11 @@ Measurement getReadings() {
     m.moisture_percent = readMoisture();
 
     // Light Level
-    m.light_level = analogRead(light) * 4095; // this will be out of 4095
+    m.light_level = analogRead(light) / 4095; // this will be out of 4095
     printf("\n\n%d\n\n", analogRead(light));
     hdc1080.begin(0x40);
     // Temperature/Humidity Reading
-    m.temperature = hdc1080.readTemperature() * 1.8 + 32;
+    m.temperature = hdc1080.readTemperature();
     m.humidity = hdc1080.readHumidity();
 
     // Battery Reading

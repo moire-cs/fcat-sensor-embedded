@@ -64,7 +64,7 @@ void arduinoTask(void *pvParameters) {
         Serial.println("Printing");
     }
     printReadings();
-
+    clearReadings();
     // 任务完成主要工作后，发送完成信号给主任务
     xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
 

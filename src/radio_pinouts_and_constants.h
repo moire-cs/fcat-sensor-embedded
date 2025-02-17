@@ -49,7 +49,7 @@ RTC_DATA_ATTR struct Measurement measurements[MAX_MEASUREMENTS]; // measurements
 
 // For Device Sleep
 RTC_DATA_ATTR unsigned int hour = 0;               // hours
-RTC_DATA_ATTR unsigned int min = 1;               //minutes
+RTC_DATA_ATTR unsigned int minutes= 1;               //minutes
 RTC_DATA_ATTR unsigned int sec = 12;              //seconds  
 RTC_DATA_ATTR unsigned int num_measurements = 2;                // num measurements to take in a set time
 RTC_DATA_ATTR float time_sync_tolerance = 0.005; // factor
@@ -59,7 +59,7 @@ RTC_DATA_ATTR float mesh_sync_tolerance = 0.005; // factor
 #define minutes_to_seconds 60
 #define hours_to_seconds 3600
 
-RTC_DATA_ATTR uint64_t timer = (hour * hours_to_seconds + min * minutes_to_seconds + sec)*microseconds/(num_measurements); // (equally spaces out measurements) converted to microseconds in code
+RTC_DATA_ATTR uint64_t timer = (hour * hours_to_seconds + minutes * minutes_to_seconds + sec)*microseconds/(num_measurements); // (equally spaces out measurements) converted to microseconds in code
 
 
 

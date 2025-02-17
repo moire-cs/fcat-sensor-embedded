@@ -72,7 +72,7 @@ Measurement getReadings() {
 
     // Battery Reading
     int battery_level;
-    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
+    adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); //do we need esp_err_t r = ?
     m.battery_level = battery_level;                                             // Can't put unsigned int into function above
 
     // Disable the Power Rail

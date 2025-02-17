@@ -13,6 +13,7 @@
 //#include "meshing.h"
 #include "measurement.h"
 #include <EEPROM.h>
+#include "esp_timer.h"
 
 
 // 日志标签（ESP-IDF 风格）
@@ -125,7 +126,10 @@ extern "C" void app_main(void) {
         // 清除事件组中的位（如果还未自动清除）
         xEventGroupClearBits(arduino_event_group, ARDUINO_FINISHED_BIT);
 
-        // 等待 5 秒后重新创建任务，形成周期性循环
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        // try esp_sleep and time accuracy
+        int64_t start_time = esp_timer_get_time();
+        int64_t end_time = esp_timer_get_time();
+        esp_deep_sleep(timer);//sleep
+        printf("Elapsed time: %lld us\n", end_time - start_time);
     }
 }

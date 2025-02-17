@@ -55,7 +55,7 @@ RTC_DATA_ATTR unsigned int num_measurements = 2;                // num measureme
 RTC_DATA_ATTR float time_sync_tolerance = 0.005; // factor
 RTC_DATA_ATTR float mesh_sync_tolerance = 0.005; // factor
 
-#define microseconds 1000                           // 1 second in microseconds
+#define microseconds 1000000                           // 1 second in microseconds
 #define minutes_to_seconds 60
 #define hours_to_seconds 3600
 

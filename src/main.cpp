@@ -25,7 +25,7 @@ static const char* TAG = "APP";
 //struct timeval tv_now;
 //struct timeval start;
 
-RTC_DATA_ATTR unsigned int start_time = 0;
+RTC_DATA_ATTR int32_t start_time = 0;
 
 // ---------------------------------------------------------
 // 配置参数：
@@ -85,11 +85,10 @@ void arduinoTask(void *pvParameters) {
 extern "C" void app_main(void) {
     if(start_time != 0){
         // wakes up and resume
-        int64_t wake_time = esp_timer_get_time();  // get time after wake
+        int32_t wake_time = esp_timer_get_time();  // get time after wake
         // calculate time in sleep
-        ESP_LOGI("Deep Sleep", "Actual sleep time: %lld us",
-                 wake_time - start_time);
-        start_time = 0;    
+        ESP_LOGI("Deep Sleep", "实际睡眠时间: %lld us",
+                 wake_time - start_time);  
     }
 
     // 初始化 Arduino 环境

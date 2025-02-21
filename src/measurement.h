@@ -63,16 +63,16 @@ Measurement getReadings() {
     m.moisture_percent = readMoisture();
 
     // Light Level
-    m.light_level = analogRead(light) * 4095; // this will be out of 4095
-    printf("\n\n%0.5f\n\n", analogRead(light));
+    m.light_level = analogRead(light) / 4095; // this will be out of 4095
+    //printf("\n\n%d\n\n", analogRead(light));
     hdc1080.begin(0x40);
     // Temperature/Humidity Reading
-    m.temperature = hdc1080.readTemperature() * 1.8 + 32;
+    m.temperature = hdc1080.readTemperature();
     m.humidity = hdc1080.readHumidity();
 
     // Battery Reading
     int battery_level;
-    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); // this will be out of 4095
+    esp_err_t r = adc2_get_raw(ADC2_CHANNEL_8, ADC_WIDTH_12Bit, &battery_level); 
     m.battery_level = battery_level;                                             // Can't put unsigned int into function above
 
     // Disable the Power Rail

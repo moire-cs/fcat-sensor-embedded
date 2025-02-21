@@ -127,9 +127,21 @@ extern "C" void app_main(void) {
         xEventGroupClearBits(arduino_event_group, ARDUINO_FINISHED_BIT);
 
         // try esp_sleep and time accuracy
-        int64_t start_time = esp_timer_get_time();
-        int64_t end_time = esp_timer_get_time();
-        esp_deep_sleep(timer);//sleep
-        printf("Elapsed time: %lld us\n", end_time - start_time);
+        int64_t start_time = esp_timer_get_time();  // current time in us
+        ESP_LOGI("Deep Sleep", "Entering deep sleep for 5 seconds...");
+
+        // set up timer wake_up
+        #define test_time 5000000 // 5s
+        esp_sleep_enable_timer_wakeup(test_time);
+        esp_deep_sleep_start();  // 进入深度睡眠，代码会在此处暂停运行
+
+        // wakes up and resume
+        int64_t wake_time = esp_timer_get_time();  // get time after wake
+        // calculate time in sleep
+        ESP_LOGI("Deep Sleep", "Actual sleep time: %lld us",
+             wake_time - start_time);
+        
+        // delay for 5s
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }

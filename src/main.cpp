@@ -25,7 +25,7 @@ static const char* TAG = "APP";
 //struct timeval tv_now;
 //struct timeval start;
 
-
+RTC_DATA_ATTR unsigned int start_time = 0;
 
 // ---------------------------------------------------------
 // 配置参数：
@@ -83,6 +83,15 @@ void arduinoTask(void *pvParameters) {
 //    然后延时后重新创建任务，形成周期性循环。
 // ---------------------------------------------------------
 extern "C" void app_main(void) {
+    if(start_time != 0){
+        // wakes up and resume
+        int64_t wake_time = esp_timer_get_time();  // get time after wake
+        // calculate time in sleep
+        ESP_LOGI("Deep Sleep", "Actual sleep time: %lld us",
+                 wake_time - start_time);
+        start_time = 0;    
+    }
+
     // 初始化 Arduino 环境
     initArduino();
 
@@ -127,7 +136,7 @@ extern "C" void app_main(void) {
         xEventGroupClearBits(arduino_event_group, ARDUINO_FINISHED_BIT);
 
         // try esp_sleep and time accuracy
-        int64_t start_time = esp_timer_get_time();  // current time in us
+        start_time = esp_timer_get_time();  // 记录启动时间
         ESP_LOGI("Deep Sleep", "Entering deep sleep for 5 seconds...");
 
         // set up timer wake_up
@@ -135,13 +144,5 @@ extern "C" void app_main(void) {
         esp_sleep_enable_timer_wakeup(test_time);
         esp_deep_sleep_start();  // 进入深度睡眠，代码会在此处暂停运行
 
-        // wakes up and resume
-        int64_t wake_time = esp_timer_get_time();  // get time after wake
-        // calculate time in sleep
-        ESP_LOGI("Deep Sleep", "Actual sleep time: %lld us",
-             wake_time - start_time);
-        
-        // delay for 5s
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }

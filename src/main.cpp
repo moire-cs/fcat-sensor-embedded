@@ -85,16 +85,14 @@ void arduinoTask(void *pvParameters) {
 // ---------------------------------------------------------
 
 void start_adjusted_deep_sleep(uint64_t sleep_time_us, uint32_t cal_ref) {
-    // 获取当前设备的 RTC 校准值（单位：ticks/秒），
-    // 理想情况下外部 32.768kHz 晶振应接近 32768 ticks/s
-    uint32_t cal_device = esp_clk_slowclk_cal_get();
 
-    // 根据校准因子调整深睡眠时间，确保睡眠时长一致
+    uint32_t cal_device = esp_clk_slowclk_cal_get();
+    ESP_LOGI(TAG, "RTC 校准: %u", cal_device);
+
     uint64_t adjusted_sleep_time_us = sleep_time_us * cal_ref / cal_device;
     ESP_LOGI(TAG, "RTC 校准: 设备 = %u, 参考 = %u, 调整后睡眠时间 = %llu us",
              cal_device, cal_ref, adjusted_sleep_time_us);
 
-    // 设置深睡眠定时器（单位微秒）
     esp_sleep_enable_timer_wakeup(adjusted_sleep_time_us);
     esp_deep_sleep_start();
 }

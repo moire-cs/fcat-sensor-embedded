@@ -1,3 +1,5 @@
+//#include "radio_pinouts_and_constants.h"
+
 void postData(struct Measurement m);
 
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
@@ -44,9 +46,9 @@ void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen
         Measurement* received = reinterpret_cast<Measurement*>(&buf_);
 
         // do something with message, for example pass it through a callback
-        Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", _msgFrom,
-            received, RFM95Modem_.lastRssi());
-
+        Serial.printf("[%d] Received measurement. RSSI: %d\n", *_msgFrom, RFM95Modem_.lastRssi());
+        printMeasurement(*received); 
+        
         // clears msgRcv
         // memset(msgRcv, 0, sizeof(msgRcv));
 
@@ -87,8 +89,9 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
             std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
             Measurement* received = reinterpret_cast<Measurement*>(&buf_);
-            Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
-                received, RFM95Modem_.lastRssi());
+
+            Serial.printf("[%d] Received measurement. RSSI: %d\n", *_msgFrom, RFM95Modem_.lastRssi());
+            printMeasurement(*received); 
         }
         else {
             Serial.println("No reply, is the target node running?");

@@ -83,7 +83,7 @@ void arduinoTask(void *pvParameters) {
 //   sleep_time_us - 期望深睡眠时间（微秒）
 //   cal_ref       - 理想参考校准值，通常设为 32768
 // ---------------------------------------------------------
-
+/*
 void start_adjusted_deep_sleep(uint64_t sleep_time_us, uint32_t cal_ref) {
 
     uint32_t cal_device = esp_clk_slowclk_cal_get();
@@ -95,7 +95,7 @@ void start_adjusted_deep_sleep(uint64_t sleep_time_us, uint32_t cal_ref) {
 
     esp_sleep_enable_timer_wakeup(adjusted_sleep_time_us);
     esp_deep_sleep_start();
-}
+}*/
 
 // ---------------------------------------------------------
 // ESP-IDF 主入口函数
@@ -154,7 +154,7 @@ extern "C" void app_main(void) {
         #define DESIRED_SLEEP_TIME_US 5000000
         // 使用外部 32.768kHz 晶振校准调整后进入深睡眠，
         // 参考校准值设为 32768（理想值）
-        start_adjusted_deep_sleep(DESIRED_SLEEP_TIME_US, 32768);
+        //start_adjusted_deep_sleep(DESIRED_SLEEP_TIME_US, 32768);
         //start_adjusted_deep_sleep(timer, cal_ref);
 
     }

@@ -16,6 +16,7 @@
 
 timeval start, tv_now;
 
+float duration;
 void rhSetup();
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
@@ -25,45 +26,82 @@ void send();
 void receive();
 void sleep();
 void sense();
+static const char* TAG = "ArduinoTask";
 
-void setup() {
-    // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector  
-    // CLEAR_PERI_REG_MASK(RTC_CNTL_BROWN_OUT_REG, RTC_CNTL_BROWN_OUT_RST_ENA);
-    gettimeofday(&start, NULL);
-    Serial.begin(115200);
-    esp_wifi_set_mode(WIFI_MODE_NULL);
+// ---------------------------------------------------------
+// Setups：
+// ---------------------------------------------------------
+#define ARDUINO_TASK_STACK_SIZE 4096    // 分配给 Arduino 任务的栈大小（字节）; due to change
+#define ARDUINO_TASK_PRIORITY    5       // Arduino 任务优先级
 
-    esp_task_wdt_init(WDT_TIMEOUT, true); // enable panic so ESP32 restarts
-    esp_task_wdt_add(NULL);
+// 全局变量，用于记录每个周期的起始时间（单位：微秒），全部基于 esp_timer_get_time()
+uint64_t start_time;
 
-    adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
-    // add current thread to WDT watch
+// Define the bit in the event group used to indicate Arduino task completion
+#define ARDUINO_FINISHED_BIT     (1 << 0)
 
-    measureSetup();
-    rhSetup();
-    Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
-        " INIT ---------------- ");
+// ---------------------------------------------------------
+// Static memory allocation: for creating the Arduino task
+// ---------------------------------------------------------
+static StaticTask_t arduinoTaskTCB;
+static StackType_t arduinoTaskStack[ARDUINO_TASK_STACK_SIZE];
+
+// Global event group handle, used by the Arduino task to notify the main task
+EventGroupHandle_t arduino_event_group = NULL;
+
+// ---------------------------------------------------------
+// Arduino task function
+//Everything but timing
+// ---------------------------------------------------------
+void arduinoTask(void *pvParameters) {
+// 执行状态机的一个完整周期：
+    // 按照原代码的状态顺序： WAITING -> SENSING -> RECEIVING -> SENDING
+    // 各状态的功能函数（wait(), sense(), receive(), send(), sleep()）均假定在 include 文件中实现
+
+    while (1) {
+        switch (state) {
+            case WAITING:
+                wait();   // 等待同步（解析时间参数，设置 timer 等）
+                break;
+            case SENSING:
+                sense();  // 采集数据
+                break;
+            case RECEIVING:
+                receive(); // 接收数据
+                break;
+            case SENDING:
+                send();   // 发送数据，并调用 sleep() 进行延时等待下一周期
+                // 这里认为 send() 内部调用了 sleep()，完成本周期
+                goto cycle_end;  // 退出状态机循环，结束本次任务
+            default:
+                Serial.println("Reached default state");
+                break;
+        }
+    }
+cycle_end:
+    // 通知主任务：本周期结束
+    xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
+    vTaskDelete(NULL);
 }
 
-void loop() {
-    switch (state) {
-    case WAITING:
-        wait();
-        break;
-    case SENSING:
-        sense();
-        break;
-    case SENDING:
-        send();
-        break;
-    case RECEIVING:
-        receive();
-        break;
-    default:
-        Serial.println("Reached default");
-        break;
-    }
 
+// ----------------------------
+// 改写 sleep() 函数：
+// 计算本周期已经过的时间（基于 esp_timer_get_time()），
+// 并利用 vTaskDelay() 延时剩余时间（微秒 -> 毫秒转换后使用 pdMS_TO_TICKS()）。
+// ----------------------------
+void sleep() {
+    uint64_t now_time = esp_timer_get_time();
+    uint64_t elapsed = now_time - start_time;
+    // 若 timer 未设置，则默认周期为5秒
+    if (timer == 0) {
+        timer = 5000000ULL;
+    }
+    uint64_t sleepTime = (elapsed < timer) ? (timer - elapsed) : 0;
+    Serial.println("Elapsed: " + String((double)elapsed / microseconds, 3) +
+                   " s, sleeping for: " + String((double)sleepTime / microseconds, 3) + " s");
+    vTaskDelay(pdMS_TO_TICKS(sleepTime / 1000ULL));
+    start_time = esp_timer_get_time();
 }
 
 void wait() {
@@ -137,7 +175,7 @@ void receive() {
 void sense() {
     Measurement m = getReadings();
     printMeasurement(m);             // Prints measurement (this will not be needed later)
-    isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
+    boolean isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
 
     state = (isFull && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
     if (state == SENSING) {
@@ -145,15 +183,87 @@ void sense() {
     }
 }
 
-void sleep() {
-    Serial.println("Start: " + String(start.tv_sec) + "." + String(start.tv_usec));
-    Serial.println("Timer: " + String(timer));
-    gettimeofday(&tv_now, NULL); // get time of day
 
-    // Calculates time it takes between startup and now
-    uint64_t sleepTime = ((timer + start.tv_sec - tv_now.tv_sec)) * microseconds + start.tv_usec - tv_now.tv_usec;
-    Serial.println("Sleeping at: " + String(tv_now.tv_sec) + "." + String(tv_now.tv_usec) + " seconds and for: " + String((double)sleepTime / microseconds) + " seconds");
-    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
-    esp_task_wdt_reset();
-    esp_deep_sleep_start();
+
+
+// ---------------------------------------------------------
+// ESP-IDF main entry function
+// 1. Call initArduino() to initialize the Arduino environment;
+// 2. Create an event group for communication between the Arduino task and the main task;
+// 3. In a loop, statically create the Arduino task, wait for a completion signal from Arduino,
+//    then delete the task, wait for a delay, and recreate the task to form a periodic cycle.
+// ---------------------------------------------------------
+extern "C" void app_main(void) {
+    // 初始化 Arduino 环境和 Serial
+    initArduino();
+    Serial.begin(115200);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    ESP_LOGI(TAG, "ESP-IDF sensor_node app_main 启动");
+
+    // 设置 WiFi 为 NULL 模式（若不需要WiFi）
+    esp_wifi_set_mode(WIFI_MODE_NULL);
+
+    // 初始化看门狗、ADC、传感器、无线模块等
+    esp_task_wdt_init(WDT_TIMEOUT, true);
+    esp_task_wdt_add(NULL);
+    adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
+    measureSetup();
+    rhSetup();
+    Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
+                   " INIT ---------------- ");
+
+    // 创建事件组，用于传递任务完成信号
+    arduino_event_group = xEventGroupCreate();
+
+    // 用 esp_timer_get_time() 记录本周期起始时间（单位：微秒）
+    start_time = esp_timer_get_time();
+
+    // 主循环：反复创建 sensorTask 任务，等待其完成后再延时到下一个周期
+    while (true) {
+        // 将状态重置为初始状态
+        state = WAITING;
+        // 创建 sensorNode 任务（静态内存分配）
+        TaskHandle_t sensorTaskHandle = xTaskCreateStatic(
+            arduinoTask,
+            "arduinoTask",
+            ARDUINO_TASK_STACK_SIZE,
+            NULL,
+            ARDUINO_TASK_PRIORITY,
+            arduinoTaskStack,
+            &arduinoTaskTCB
+        );
+        ESP_LOGI(TAG, "Sensor task 创建成功");
+
+        // 等待 sensorTask 完成一个完整周期（事件组等待）
+        EventBits_t bits = xEventGroupWaitBits(
+            arduino_event_group,
+            ARDUINO_FINISHED_BIT,
+            pdTRUE,
+            pdFALSE,
+            portMAX_DELAY
+        );
+        if (bits & ARDUINO_FINISHED_BIT) {
+            ESP_LOGI(TAG, "Sensor task 周期完成");
+        }
+
+        // 删除任务（通常 sensorTask 已自行删除，但确保删除）
+        vTaskDelete(sensorTaskHandle);
+
+        // 计算本周期内已消耗的时间（单位：微秒）
+        uint64_t now_time = esp_timer_get_time();
+        uint64_t elapsed = now_time - start_time;
+        // 计算延时：如果本周期不足 timer，则延时剩余时间
+        uint64_t delay_time_us = (elapsed < timer) ? (timer - elapsed) : 0;
+        ESP_LOGI(TAG, "本周期耗时: %llu us, 延时: %llu us", elapsed, delay_time_us);
+
+        // 使用 vTaskDelay() 延时（将微秒转换为毫秒，再转换为 FreeRTOS tick）
+        vTaskDelay(pdMS_TO_TICKS(delay_time_us / 1000ULL));
+
+        // 更新周期起始时间
+        start_time = esp_timer_get_time();
+    }
 }
+
+
+
+

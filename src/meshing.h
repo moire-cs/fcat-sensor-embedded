@@ -125,11 +125,12 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
             Packet* received = reinterpret_cast<Packet*>(_msgRcvBuf);
 
             printPacket(*received);
+            /*
             for (int i = 0; i < MAX_MEASUREMENTS; i++) {
                  printMeasurements(received[i]);
 
             }
-
+            */
             // Resets msgRcv
             memset(msgRcv, 0, sizeof(msgRcv));
             esp_task_wdt_reset();

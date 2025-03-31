@@ -136,6 +136,9 @@ void wait() {
 
         state = RECEIVING;
     }
+    else {
+        Serial.println("Time sync failed! Will retry next cycle.");
+    }
 
 }
 

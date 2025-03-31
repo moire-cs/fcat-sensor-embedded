@@ -116,6 +116,7 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
     // For wait_time, the gateway will wait for messages (multiple), and then post them to the backend
     while (millis() - start < wait_time) {
+        esp_task_wdt_reset();
         if (RHMeshManager_.recvfromAck(_msgRcvBuf, _msgRcvBufLen, _msgFrom)) {
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
@@ -143,6 +144,7 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
             esp_task_wdt_reset();
         }
         esp_task_wdt_reset();
+        delay(50);
     }
 }
 // struct Measurement* packetInfo, , uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_

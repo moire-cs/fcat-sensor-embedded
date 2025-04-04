@@ -59,26 +59,27 @@ void arduinoTask(void *pvParameters) {
     // 各状态的功能函数（wait(), sense(), receive(), send(), sleep()）均假定在 include 文件中实现
 
     while (1) {
+        Serial.printf("[SensorNode] Current state: %d\n", state);
         switch (state) {
             case WAITING:
-                wait();   // 等待同步（解析时间参数，设置 timer 等）
+                wait();   
                 break;
             case SENSING:
-                sense();  // 采集数据
+                sense(); 
                 break;
             case RECEIVING:
-                receive(); // 接收数据
+                receive(); 
                 break;
             case SENDING:
                 send();   // 发送数据，并调用 sleep() 进行延时等待下一周期
-                // 这里认为 send() 内部调用了 sleep()，完成本周期
+                          // 这里认为 send() 内部调用了 sleep()，完成本周期
                 goto cycle_end;  // 退出状态机循环，结束本次任务
             default:
                 Serial.println("Reached default state");
                 break;
         }
     }
-cycle_end:
+    cycle_end:
     // 通知主任务：本周期结束
     xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
     vTaskDelete(NULL);
@@ -108,9 +109,8 @@ void wait() {
     uint8_t _msgFrom;
     uint8_t _timeSyncRcvBufLen = sizeof(_timeSyncRcvBuf);
     Serial.println("waiting...");
-
     esp_task_wdt_reset();
-    if (runTimeSyncReceiver(1000, _timeSyncRcvBuf, &_timeSyncRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_)) {
+    if (runTimeSyncReceiver(5000, _timeSyncRcvBuf, &_timeSyncRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_)) {
 
         gettimeofday(&start, NULL);
         // Serial.println("waiting 2");

@@ -90,7 +90,7 @@ RTC_DATA_ATTR boolean isFull;
 #define SENDING 3
 // #define SLEEPING 4
 
-RTC_DATA_ATTR unsigned int state = WAITING;
+RTC_DATA_ATTR volatile unsigned int state = WAITING;
 
 #if defined(SELF_ADDRESS) && defined(TARGET_ADDRESS)
 const uint8_t selfAddress_ = SELF_ADDRESS;

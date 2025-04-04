@@ -87,8 +87,12 @@ void runTimeSync() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-    Serial.printf("Sending data to %d...", RH_BROADCAST_ADDRESS);
-    runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+
+    for (int i = 0; i < 5; i++) { //try 5 times
+        Serial.printf("Sending time sync to %d... (attempt %d)\n", RH_BROADCAST_ADDRESS, i + 1);
+        runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+        delay(1000); // wait for 1s
+    }
 }
 
 void receive() {

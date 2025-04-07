@@ -1,6 +1,44 @@
-//#include "radio_pinouts_and_constants.h"
+#include "radio_pinouts_and_constants.h"
 
-void postData(struct Measurement m);
+void postData(struct Packet p) {
+    String json = "{";
+
+    // Node ID
+    json += "\"nodeId\": " + String(p.node_number) + ",";
+
+    // Sensors
+    json += "\"sensors\": [";
+    for (int i = 0; i < 4; i++) {
+        json += String(p.sensors[i]);
+        if (i < 3) json += ",";
+    }
+    json += "],";
+
+    // Measurements array
+    json += "\"measurements\": [";
+    for (int i = 0; i < MAX_MEASUREMENTS; i++) {
+        // 只输出非空数据
+        if (p.data[i].moisture_percent == 0 && p.data[i].temperature == 0) continue;
+
+        json += "{";
+        json += "\"timestamp\": " + String(p.data[i].timestamp) + ",";
+        json += "\"moisture\": " + String(p.data[i].moisture_percent) + ",";
+        json += "\"temperature\": " + String(p.data[i].temperature, 2) + ",";
+        json += "\"humidity\": " + String(p.data[i].humidity, 2) + ",";
+        json += "\"light\": " + String(p.data[i].light_level) + ",";
+        json += "\"battery\": " + String(p.data[i].battery_level);
+        json += "}";
+
+        if (i < MAX_MEASUREMENTS - 1) json += ",";
+    }
+    json += "]";
+
+    json += "}";
+
+    Serial.println("---- JSON Packet to Send ----");
+    Serial.println(json);
+    Serial.println("-----------------------------");
+}
 
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // while at it, wait for a message from other nodes
@@ -72,7 +110,7 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
     p.sensors[2] = 2;
     p.sensors[3] = 3;
     for (int i = 0; i < MAX_MEASUREMENTS; i++) {
-        p.data[i] = measurements[i];
+        memcpy(&p.data[i], &measurements[i], sizeof(Measurement));
     }
 
     uint8_t _err =
@@ -126,6 +164,7 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
             Packet* received = reinterpret_cast<Packet*>(_msgRcvBuf);
 
             printPacket(*received);
+            postData(*received);
             /*
             for (int i = 0; i < MAX_MEASUREMENTS; i++) {
                  printMeasurements(received[i]);

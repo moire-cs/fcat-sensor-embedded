@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include <driver/adc.h>
 #include <EEPROM.h>
-#include "radio_pinouts_and_constants.h"
+//#include "radio_pinouts_and_constants.h"
 
 ClosedCube_HDC1080 hdc1080;
 

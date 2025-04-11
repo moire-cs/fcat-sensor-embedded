@@ -1,4 +1,4 @@
-#include "radio_pinouts_and_constants.h"
+//#include "radio_pinouts_and_constants.h"
 
 void postData(struct Packet p) {
     String json = "{";
@@ -16,10 +16,13 @@ void postData(struct Packet p) {
 
     // Measurements array
     json += "\"measurements\": [";
+    bool first = true;
     for (int i = 0; i < MAX_MEASUREMENTS; i++) {
-        // 只输出非空数据
         if (p.data[i].moisture_percent == 0 && p.data[i].temperature == 0) continue;
-
+    
+        if (!first) json += ",";
+        first = false;
+    
         json += "{";
         json += "\"timestamp\": " + String(p.data[i].timestamp) + ",";
         json += "\"moisture\": " + String(p.data[i].moisture_percent) + ",";
@@ -28,10 +31,9 @@ void postData(struct Packet p) {
         json += "\"light\": " + String(p.data[i].light_level) + ",";
         json += "\"battery\": " + String(p.data[i].battery_level);
         json += "}";
-
-        if (i < MAX_MEASUREMENTS - 1) json += ",";
     }
     json += "]";
+    
 
     json += "}";
 
@@ -112,9 +114,11 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
     for (int i = 0; i < MAX_MEASUREMENTS; i++) {
         memcpy(&p.data[i], &measurements[i], sizeof(Measurement));
     }
+    //For now we broadcast to all for the sake of testing
+    uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), RH_BROADCAST_ADDRESS); 
 
-    uint8_t _err =
-        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), targetAddress_);
+    //original code
+    //uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), targetAddress_); 
 
     if (_err == RH_ROUTER_ERROR_NONE) {
         // message successfully be sent to the target node, or next neighboring

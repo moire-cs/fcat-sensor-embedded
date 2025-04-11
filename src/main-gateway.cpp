@@ -88,11 +88,9 @@ void runTimeSync() {
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
-    for (int i = 0; i < 5; i++) { //try 5 times
-        Serial.printf("Sending time sync to %d... (attempt %d)\n", RH_BROADCAST_ADDRESS, i + 1);
-        runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
-        delay(1000); // wait for 1s
-    }
+    Serial.printf("Sending time sync to %d...", RH_BROADCAST_ADDRESS);
+    runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+
 }
 
 void receive() {
@@ -106,7 +104,7 @@ void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = 0*(0.5 * hours_to_seconds * microseconds)+ 10000 * (1 + 6 * time_sync_tolerance) - time_taken;//10s test time
+    uint64_t sleepTime = 0*(0.5 * hours_to_seconds * microseconds) + 10000 * (1 + 6 * time_sync_tolerance) - time_taken;//10s test time
     Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
     esp_task_wdt_reset();

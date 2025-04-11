@@ -96,7 +96,7 @@ void sleep() {
     uint64_t elapsed = now_time - start_time;
     // 若 timer 未设置，则默认周期为5秒
     if (timer == 0) {
-        timer = 5000000ULL;
+        timer = 10000000ULL; // 5 seconds in microseconds
     }
     uint64_t sleepTime = (elapsed < timer) ? (timer - elapsed) : 0;
     Serial.println("Elapsed: " + String((double)elapsed / microseconds, 3) +
@@ -163,14 +163,14 @@ void send() {
 }
 
 void receive() {
-    esp_task_wdt_reset();
+    /*esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
     Serial.println("Receiving mode active");
     // We need to be receiving for a random time
     uint16_t wait_time = random(1000, 5000);
-    runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+    runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);*/
     esp_task_wdt_reset();
     state = SENDING;
 }
@@ -251,16 +251,16 @@ extern "C" void app_main(void) {
 
         // 删除任务（通常 sensorTask 已自行删除，但确保删除）
         vTaskDelete(sensorTaskHandle);
-        /*
+        ESP_LOGI(TAG, "Sensor task Deleted");
         // 计算本周期内已消耗的时间（单位：微秒）
         uint64_t now_time = esp_timer_get_time();
         uint64_t elapsed = now_time - start_time;
         // 计算延时：如果本周期不足 timer，则延时剩余时间
         uint64_t delay_time_us = (elapsed < timer) ? (timer - elapsed) : 0;
-        ESP_LOGI(TAG, "本周期耗时: %llu us, 延时: %llu us", elapsed, delay_time_us);*/
+        ESP_LOGI(TAG, "本周期耗时: %llu us, 延时: %llu us", elapsed, delay_time_us);
 
         // 使用 vTaskDelay() 延时（将微秒转换为毫秒，再转换为 FreeRTOS tick）
-        vTaskDelay(pdMS_TO_TICKS(10000000ULL)); // 10s delay for testing
+        vTaskDelay(pdMS_TO_TICKS(1000ULL)); //
         // 更新周期起始时间
         //start_time = esp_timer_get_time();
     }

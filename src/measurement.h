@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include <driver/adc.h>
 #include <EEPROM.h>
-// #include "pinouts_and_constants.h"
+#include "radio_pinouts_and_constants.h"
 
 ClosedCube_HDC1080 hdc1080;
 
@@ -63,7 +63,7 @@ Measurement getReadings() {
     m.moisture_percent = readMoisture();
 
     // Light Level
-    m.light_level = analogRead(light) / 4095; // this will be out of 4095
+    m.light_level = analogRead(light); // 4095;  this will be out of 4095
     //printf("\n\n%d\n\n", analogRead(light));
     hdc1080.begin(0x40);
     // Temperature/Humidity Reading
@@ -101,13 +101,8 @@ boolean saveReading(struct Measurement m) {
 
 // prints all stored readings
 void printReadings() {
-    int i = 0;
-    for (struct Measurement m : measurements) {
-        i++;
-        if (i > measurement_count)
-            break;
-
-        printMeasurement(m);
+    for (int i = 0; i < measurement_count; i++) {
+        printMeasurement(measurements[i]);
     }
 }
 

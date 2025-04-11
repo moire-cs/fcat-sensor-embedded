@@ -106,7 +106,7 @@ void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = 0.5 * hours_to_seconds * microseconds * (1 + 6 * time_sync_tolerance) - time_taken;
+    uint64_t sleepTime = 0*(0.5 * hours_to_seconds * microseconds)+ 10000 * (1 + 6 * time_sync_tolerance) - time_taken;//10s test time
     Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
     esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
     esp_task_wdt_reset();

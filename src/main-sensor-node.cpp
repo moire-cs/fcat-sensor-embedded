@@ -82,28 +82,8 @@ void arduinoTask(void *pvParameters) {
     cycle_end:
     // 通知主任务：本周期结束
     xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
-    vTaskDelete(NULL);
 }
 
-
-// ----------------------------
-// 改写 sleep() 函数：
-// 计算本周期已经过的时间（基于 esp_timer_get_time()），
-// 并利用 vTaskDelay() 延时剩余时间（微秒 -> 毫秒转换后使用 pdMS_TO_TICKS()）。
-// ----------------------------
-void sleep() {
-    uint64_t now_time = esp_timer_get_time();
-    uint64_t elapsed = now_time - start_time;
-    // 若 timer 未设置，则默认周期为5秒
-    if (timer == 0) {
-        timer = 10000000ULL; // 5 seconds in microseconds
-    }
-    uint64_t sleepTime = (elapsed < timer) ? (timer - elapsed) : 0;
-    Serial.println("Elapsed: " + String((double)elapsed / microseconds, 3) +
-                   " s, sleeping for: " + String((double)sleepTime / microseconds, 3) + " s");
-    vTaskDelay(pdMS_TO_TICKS(sleepTime / 1000ULL));
-    start_time = esp_timer_get_time();
-}
 
 void wait() {
     uint8_t _msgFrom;
@@ -158,7 +138,7 @@ void send() {
     isFull = false;
     clearReadings();
     state = SENSING;
-    sleep();
+    //sleep();
 
 }
 
@@ -179,11 +159,7 @@ void sense() {
     Measurement m = getReadings();
     printMeasurement(m);             // Prints measurement (this will not be needed later)
     boolean isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
-
     state = (isFull && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
-    if (state == SENSING) {
-        sleep();
-    }
 }
 
 
@@ -248,11 +224,13 @@ extern "C" void app_main(void) {
         if (bits & ARDUINO_FINISHED_BIT) {
             ESP_LOGI(TAG, "Sensor task 周期完成");
         }
-
         // 删除任务（通常 sensorTask 已自行删除，但确保删除）
         vTaskDelete(sensorTaskHandle);
         ESP_LOGI(TAG, "Sensor task Deleted");
-        // 计算本周期内已消耗的时间（单位：微秒）
+        esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 seconds
+        Serial.println("进入 deep sleep 10 秒...");
+        esp_deep_sleep_start();
+        /*
         uint64_t now_time = esp_timer_get_time();
         uint64_t elapsed = now_time - start_time;
         // 计算延时：如果本周期不足 timer，则延时剩余时间
@@ -262,7 +240,8 @@ extern "C" void app_main(void) {
         // 使用 vTaskDelay() 延时（将微秒转换为毫秒，再转换为 FreeRTOS tick）
         vTaskDelay(pdMS_TO_TICKS(1000ULL)); //
         // 更新周期起始时间
-        //start_time = esp_timer_get_time();
+        start_time = esp_timer_get_time();
+        */
     }
 }
 

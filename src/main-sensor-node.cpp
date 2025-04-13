@@ -31,8 +31,8 @@ static const char* TAG = "ArduinoTask";
 // ---------------------------------------------------------
 // Setups：
 // ---------------------------------------------------------
-#define ARDUINO_TASK_STACK_SIZE 4096    // 分配给 Arduino 任务的栈大小（字节）; due to change
-#define ARDUINO_TASK_PRIORITY    5       // Arduino 任务优先级
+#define ARDUINO_TASK_STACK_SIZE 8192    // stack for arduino task; due to change; try 8192
+#define ARDUINO_TASK_PRIORITY    5       // Arduino task priority
 
 // 全局变量，用于记录每个周期的起始时间（单位：微秒），全部基于 esp_timer_get_time()
 uint64_t start_time;
@@ -56,7 +56,6 @@ EventGroupHandle_t arduino_event_group = NULL;
 void arduinoTask(void *pvParameters) {
 // 执行状态机的一个完整周期：
     // 按照原代码的状态顺序： WAITING -> SENSING -> RECEIVING -> SENDING
-    // 各状态的功能函数（wait(), sense(), receive(), send(), sleep()）均假定在 include 文件中实现
 
     while (1) {
         Serial.printf("[SensorNode] Current state: %d\n", state);
@@ -71,9 +70,8 @@ void arduinoTask(void *pvParameters) {
                 receive(); 
                 break;
             case SENDING:
-                send();   // 发送数据，并调用 sleep() 进行延时等待下一周期
-                          // 这里认为 send() 内部调用了 sleep()，完成本周期
-                goto cycle_end;  // 退出状态机循环，结束本次任务
+                send();  
+                goto cycle_end;  // exit task after sending for sleep
             default:
                 Serial.println("Reached default state");
                 break;
@@ -199,8 +197,6 @@ extern "C" void app_main(void) {
 
     // 主循环：反复创建 sensorTask 任务，等待其完成后再延时到下一个周期
     while (true) {
-        // 将状态重置为初始状态
-        state = WAITING;
         // 创建 sensorNode 任务（静态内存分配）
         TaskHandle_t sensorTaskHandle = xTaskCreateStatic(
             arduinoTask,
@@ -224,12 +220,16 @@ extern "C" void app_main(void) {
         if (bits & ARDUINO_FINISHED_BIT) {
             ESP_LOGI(TAG, "Sensor task 周期完成");
         }
-        // 删除任务（通常 sensorTask 已自行删除，但确保删除）
+        // Task delete
         vTaskDelete(sensorTaskHandle);
         ESP_LOGI(TAG, "Sensor task Deleted");
+
         esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 seconds
         Serial.println("进入 deep sleep 10 秒...");
         esp_deep_sleep_start();
+        /*
+        disable timer adjustment for the sake of testing
+        */
         /*
         uint64_t now_time = esp_timer_get_time();
         uint64_t elapsed = now_time - start_time;

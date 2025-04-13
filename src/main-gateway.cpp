@@ -43,6 +43,8 @@ void setup() {
     rhSetup();
     Serial.println(" ---------------- GATEWAY " + String(selfAddress_) +
         " INIT ---------------- ");
+    Serial.println("Now run time sync...");
+    runTimeSync();
 }
 
 // uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
@@ -77,7 +79,6 @@ void loop() {
 
     // GET route to receive information from backend (cycle period, num measurements, etc.)
     // unsigned long gatewaySleep = 24; // hours
-    runTimeSync();
     receive();
     sleep();
     // cycle();
@@ -87,7 +88,6 @@ void runTimeSync() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-
     Serial.printf("Sending time sync to %d...", RH_BROADCAST_ADDRESS);
     runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 
@@ -100,13 +100,23 @@ void receive() {
     runGatewayReceiver(15 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 }
 
+// Does gateway need to sleep?
+
 void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = 0*(0.5 * hours_to_seconds * microseconds) + 10000 * (1 + 6 * time_sync_tolerance) - time_taken;//10s test time
+    uint64_t sleepTime = 10000;
+    /*
+    *still disagble time adjustment
+    */
+    // (0.5 * hours_to_seconds * microseconds) *(1 + 6 * time_sync_tolerance) - time_taken;//10s test time
     Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
-    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
-    esp_task_wdt_reset();
-    esp_deep_sleep_start();
+
+    //let's try just delay instead of deep sleep for now
+    delay(sleepTime);
+
+    //esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
+    //esp_task_wdt_reset();
+    //esp_deep_sleep_start();
 }

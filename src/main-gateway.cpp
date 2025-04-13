@@ -106,12 +106,12 @@ void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = 10000;
+    uint64_t sleepTime = 50000; //50s for testing
     /*
     *still disagble time adjustment
     */
     // (0.5 * hours_to_seconds * microseconds) *(1 + 6 * time_sync_tolerance) - time_taken;//10s test time
-    Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
+    Serial.println("Sleeping for: " + String((double)sleepTime / 1000) + " seconds");
 
     //let's try just delay instead of deep sleep for now
     delay(sleepTime);

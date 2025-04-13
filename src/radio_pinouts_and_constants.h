@@ -23,7 +23,7 @@ struct Packet {
 void printMeasurement(struct Measurement m) {
     // Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(m.measurement_num));
     Serial.println("Moisture: " + String(m.moisture_percent) + "%");
-    Serial.println("Temperature: " + String(m.temperature) + "F");
+    Serial.println("Temperature: " + String(m.temperature) + "C");
     Serial.println("Humidity: " + String(m.humidity) + "%");
     Serial.println("Light Level: " + String(m.light_level));
     Serial.println("Battery Level: " + String(m.battery_level) + "mV");

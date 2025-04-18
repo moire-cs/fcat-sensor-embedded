@@ -18,6 +18,8 @@
 RTC_DATA_ATTR bool hasTimeSync = false;   // deep‑sleep 之后仍然保存
 
 timeval start, tv_now;
+timeval end;
+const uint64_t microsecond = 1000000ULL; // 1 s = 1e6 us
 
 float duration;
 void rhSetup();
@@ -259,24 +261,22 @@ extern "C" void app_main(void) {
         vTaskDelete(sensorTaskHandle);
         ESP_LOGI(TAG, "Sensor task Deleted");
 
-        esp_sleep_enable_timer_wakeup(50 * 1000000ULL); // 50 seconds
-        Serial.println("进入 deep sleep 50 秒...");
-        esp_deep_sleep_start();
-        /*
-        disable timer adjustment for the sake of testing
-        */
-        /*
-        uint64_t now_time = esp_timer_get_time();
-        uint64_t elapsed = now_time - start_time;
-        // 计算延时：如果本周期不足 timer，则延时剩余时间
-        uint64_t delay_time_us = (elapsed < timer) ? (timer - elapsed) : 0;
-        ESP_LOGI(TAG, "本周期耗时: %llu us, 延时: %llu us", elapsed, delay_time_us);
+        gettimeofday(&end, NULL);                       // NEW：记录周期终点
+        uint64_t time_taken_us = (end.tv_sec  - start.tv_sec)  * microsecond
+                            + (end.tv_usec - start.tv_usec);
 
-        // 使用 vTaskDelay() 延时（将微秒转换为毫秒，再转换为 FreeRTOS tick）
-        vTaskDelay(pdMS_TO_TICKS(1000ULL)); //
-        // 更新周期起始时间
-        start_time = esp_timer_get_time();
-        */
+        const uint64_t TARGET_US = 50ULL * microsecond;        // 和 gateway 一致 50 s
+
+        uint64_t sleep_us = (time_taken_us < TARGET_US)
+                        ? (TARGET_US - time_taken_us)
+                        : 100000ULL;                           // 若超时，至少睡 0.1 s
+
+        Serial.printf("Cycle exec: %.2f s, deep‑sleep: %.2f s\n",
+                    time_taken_us / 1e6, sleep_us / 1e6);
+
+        esp_sleep_enable_timer_wakeup(sleep_us);
+        Serial.println("进入 deep sleep …");
+        esp_deep_sleep_start();
     }
 }
 

@@ -223,7 +223,7 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
             esp_task_wdt_reset();
         }
         esp_task_wdt_reset();
-        delay(50);
+        //delay(50);
     }
 }
 // struct Measurement* packetInfo, , uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_

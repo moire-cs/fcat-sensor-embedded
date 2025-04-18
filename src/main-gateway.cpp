@@ -105,7 +105,8 @@ void sleep() {
     esp_task_wdt_reset();
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = 50000; //50s for testing
+    uint64_t taken_us = time_taken / 1000; // convert to milliseconds
+    uint64_t sleepTime = 50000 - taken_us; //50s for testing
     /*
     *still disagble time adjustment
     */

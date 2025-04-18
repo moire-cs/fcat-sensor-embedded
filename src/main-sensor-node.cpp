@@ -229,12 +229,10 @@ extern "C" void app_main(void) {
     // 创建事件组，用于传递任务完成信号
     arduino_event_group = xEventGroupCreate();
 
-    // 用 esp_timer_get_time() 记录本周期起始时间（单位：微秒）
-    start_time = esp_timer_get_time();
-
     // 主循环：反复创建 sensorTask 任务，等待其完成后再延时到下一个周期
     while (true) {
         // 创建 sensorNode 任务（静态内存分配）
+        gettimeofday(&start, NULL); 
         TaskHandle_t sensorTaskHandle = xTaskCreateStatic(
             arduinoTask,
             "arduinoTask",

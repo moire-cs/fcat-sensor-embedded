@@ -83,69 +83,85 @@ void arduinoTask(void *pvParameters) {
     cycle_end:
     // 通知主任务：本周期结束
     xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
+    vTaskDelete(NULL); // kill itself
 }
 
 
 void wait() {
+    // [LOG] —— 函数入口
+    Serial.println("\n====== wait()  ======");      
+
     if (hasTimeSync) {
+        // [LOG]
+        Serial.println("[wait] hasTimeSync == true ➜ skip to SENSING");
         state = SENSING;
         return;
     }
+
     uint8_t _msgFrom;
     uint8_t _timeSyncRcvBufLen = sizeof(_timeSyncRcvBuf);
-    Serial.println("waiting...");
+    Serial.println("[wait] waiting for gateway…");   // [LOG]
     esp_task_wdt_reset();
-    if (runTimeSyncReceiver(5000, _timeSyncRcvBuf, &_timeSyncRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_)) {
+
+    if (runTimeSyncReceiver(5000, _timeSyncRcvBuf, &_timeSyncRcvBufLen,
+                            &_msgFrom, RFM95Modem_, RHMeshManager_)) {
 
         gettimeofday(&start, NULL);
-        // Serial.println("waiting 2");
-        Serial.println("Received data from: " + String(_msgFrom));
-        // "{ "numMeasurements" : "4", "duration" : "24", "syncTimeTolerance" : "5", "meshTimeTolerance" : "5" }"
-        // "numMeasurements, duration, syncTimeTolerance, meshTimeTolerance"
+        Serial.printf("[wait] Received data from node %d\n", _msgFrom); 
+        Serial.printf("[wait] Raw payload: \"%s\"\n", timeSyncRcv.c_str());
+
+
         int data_count = 4;
         float* tokens = (float*)malloc(sizeof(float) * data_count);
         splitn(tokens, timeSyncRcv.c_str(), ", ", data_count);
-        // for (int k = 0; k < data_count; k++) {
-        //     Serial.printf("%0.3f, ", tokens[k]);
-        // }
-        duration = (tokens[0]);
-        num_measurements = (tokens[1]);
-        time_sync_tolerance = (tokens[2]);
-        mesh_sync_tolerance = (tokens[3]);
-        // duration = 0.02;
-        // num_measurements = 2;
-        // time_sync_tolerance = 0.005;
-        // mesh_sync_tolerance = 0.005;
 
-        timer = duration * hours_to_seconds / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
+        duration             =  tokens[0];
+        num_measurements     =  tokens[1];
+        time_sync_tolerance  =  tokens[2];
+        mesh_sync_tolerance  =  tokens[3];
+
+        timer = duration * hours_to_seconds / num_measurements;
+
+        Serial.printf("[wait] Parsed: duration=%.3f h, num=%d, "
+                      "syncTol=%.3f, meshTol=%.3f, timer(us)=%llu\n",
+                      duration, (int)num_measurements,
+                      time_sync_tolerance, mesh_sync_tolerance, timer);
+
         hasTimeSync = true;
         state = RECEIVING;
-    }
+        Serial.println("[wait] ➜ state = RECEIVING");       // [LOG]
+    } 
     else {
-        Serial.println("Time sync failed! Will retry next cycle.");
+        state = RECEIVING;
+        Serial.println("[wait] Time‑sync failed, will retry next cycle");  // [LOG]
     }
-
 }
 
+
 void send() {
+    // [LOG]
+    Serial.println("\n====== send() ======");    
+
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
-    // Send a message to another rhmesh node
-    // TODO: Send our data here
-    // String packetInfo = "Hello"; // temp message
-    Serial.printf("Sending data to %d...", targetAddress_);
-    String packetInfo = "Hello World!";
-    runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+    Serial.printf("[send] Target address = %d\n", targetAddress_);    // [LOG]
 
-    // Prepare for new readings (would be next day)
+    // The original call
+    runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen,
+              &_msgFrom, RFM95Modem_, RHMeshManager_);
+
+    // Prepare for next readings
     isFull = false;
     clearReadings();
-    state = SENSING;
-    //sleep();
 
+    // [LOG]
+    Serial.println("[send] Readings cleared, isFull reset → SENSING");
+
+    state = SENSING;
 }
+
 
 void receive() {
     /*esp_task_wdt_reset();
@@ -156,15 +172,26 @@ void receive() {
     // We need to be receiving for a random time
     uint16_t wait_time = random(1000, 5000);
     runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);*/
+    Serial.println("\n====== receive() ======"); 
     esp_task_wdt_reset();
+    Serial.println("[receive] (placeholder) ➜ state = SENDING");
     state = SENDING;
 }
 
 void sense() {
+    Serial.println("\n====== sense() ======");
+
     Measurement m = getReadings();
-    printMeasurement(m);             // Prints measurement (this will not be needed later)
-    boolean isFull = saveReading(m); // save the reading to flash (also gets a boolean if the readings are full)
-    state = (isFull && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
+    Serial.print("[sense] Measurement captured: ");
+    printMeasurement(m);
+
+    bool isFullLocal = saveReading(m);
+    Serial.printf("[sense] saveReading → isFull=%d\n", isFullLocal);
+
+    state = (isFullLocal && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
+    state = RECEIVING;
+    Serial.printf("[sense] Next state = %d\n", state);
+    
 }
 
 

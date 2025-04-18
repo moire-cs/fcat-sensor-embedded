@@ -74,9 +74,9 @@ unsigned long getTime() {
 // }
 
 void loop() {
-    // gettimeofday(&start, NULL);
-    // epochTime = getTime();
-
+    gettimeofday(&start, NULL);
+    epochTime = getTime();
+    Serial.println("Current epoch time: " + String(epochTime));
     // GET route to receive information from backend (cycle period, num measurements, etc.)
     // unsigned long gatewaySleep = 24; // hours
     receive();

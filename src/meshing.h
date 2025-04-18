@@ -44,6 +44,9 @@ void postData(struct Packet p) {
 
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // while at it, wait for a message from other nodes
+    Serial.println("--------------------------------------------------------------");
+    Serial.printf("进入 runReceiver 函数，等待时间: %d 毫秒\n", wait_time);
+    Serial.printf("当前节点地址: %u\n", selfAddress_);
     if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
 
         char buf_[RH_MESH_MAX_MESSAGE_LEN];
@@ -63,9 +66,14 @@ bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgR
             Serial.println("Fail to send broadcast...");
         }
         esp_task_wdt_reset();
+        Serial.println("已同步，退出 runTimeSync 函数");
+        Serial.println("--------------------------------------------------------------");
         return true;
+        
     }
     esp_task_wdt_reset();
+    Serial.println("未同步，退出 runTimeSync 函数");
+    Serial.println("--------------------------------------------------------------");
     return false;
 }
 

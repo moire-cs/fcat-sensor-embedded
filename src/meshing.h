@@ -4,36 +4,39 @@ void postData(struct Packet p) {
     String json = "{";
 
     // Node ID
-    json += "\"nodeId\": " + String(p.node_number) + ",";
+    json += "\"nodeId\": \"" + String(p.node_number) + "\",";
 
     // Sensors
-    json += "\"sensors\": [";
-    for (int i = 0; i < 4; i++) {
-        json += String(p.sensors[i]);
-        if (i < 3) json += ",";
+    json += "\"sensors\": [\"moisture\",\"temperature\",\"humidity\",\"light\",\"battery\"],";
+
+    // Times
+    json += "\"times\": [";
+    bool firstTime = true;
+    for (int i = 0; i < MAX_MEASUREMENTS; i++) {
+        if (p.data[i].moisture_percent == 0 && p.data[i].temperature == 0) continue;
+        if (!firstTime) json += ",";
+        firstTime = false;
+        json += String(p.data[i].timestamp);
     }
     json += "],";
 
-    // Measurements array
-    json += "\"measurements\": [";
-    bool first = true;
+    // Messages
+    json += "\"messages\": [";
+    bool firstMsg = true;
     for (int i = 0; i < MAX_MEASUREMENTS; i++) {
         if (p.data[i].moisture_percent == 0 && p.data[i].temperature == 0) continue;
-    
-        if (!first) json += ",";
-        first = false;
-    
-        json += "{";
-        json += "\"timestamp\": " + String(p.data[i].timestamp) + ",";
-        json += "\"moisture\": " + String(p.data[i].moisture_percent) + ",";
-        json += "\"temperature\": " + String(p.data[i].temperature, 2) + ",";
-        json += "\"humidity\": " + String(p.data[i].humidity, 2) + ",";
-        json += "\"light\": " + String(p.data[i].light_level) + ",";
-        json += "\"battery\": " + String(p.data[i].battery_level);
-        json += "}";
+        if (!firstMsg) json += ",";
+        firstMsg = false;
+
+        json += "[";
+        json += String(p.data[i].moisture_percent) + ",";
+        json += String(p.data[i].temperature, 2) + ",";
+        json += String(p.data[i].humidity, 2) + ",";
+        json += String(p.data[i].light_level) + ",";
+        json += String(p.data[i].battery_level);
+        json += "]";
     }
     json += "]";
-    
 
     json += "}";
 
@@ -41,6 +44,7 @@ void postData(struct Packet p) {
     Serial.println(json);
     Serial.println("-----------------------------");
 }
+
 
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // while at it, wait for a message from other nodes

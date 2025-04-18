@@ -103,6 +103,7 @@ void receive() {
 
 void sleep() {
     esp_task_wdt_reset();
+    esp_task_wdt_init(60, true);
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
     uint64_t taken_us = time_taken / 1000; // convert to milliseconds

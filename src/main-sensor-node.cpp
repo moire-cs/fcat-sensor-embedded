@@ -14,6 +14,9 @@
 #include "measurement.h"
 #include "soc/rtc_cntl_reg.h"
 
+#include "esp_attr.h" 
+RTC_DATA_ATTR bool hasTimeSync = false;   // deep‑sleep 之后仍然保存
+
 timeval start, tv_now;
 
 float duration;
@@ -84,6 +87,10 @@ void arduinoTask(void *pvParameters) {
 
 
 void wait() {
+    if (hasTimeSync) {
+        state = SENSING;
+        return;
+    }
     uint8_t _msgFrom;
     uint8_t _timeSyncRcvBufLen = sizeof(_timeSyncRcvBuf);
     Serial.println("waiting...");
@@ -111,7 +118,7 @@ void wait() {
         // mesh_sync_tolerance = 0.005;
 
         timer = duration * hours_to_seconds / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
-
+        hasTimeSync = true;
         state = RECEIVING;
     }
     else {
@@ -186,6 +193,7 @@ extern "C" void app_main(void) {
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
     measureSetup();
     rhSetup();
+    state = hasTimeSync ? SENSING : WAITING;
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
                    " INIT ---------------- ");
 
@@ -224,8 +232,8 @@ extern "C" void app_main(void) {
         vTaskDelete(sensorTaskHandle);
         ESP_LOGI(TAG, "Sensor task Deleted");
 
-        esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 seconds
-        Serial.println("进入 deep sleep 10 秒...");
+        esp_sleep_enable_timer_wakeup(50 * 1000000ULL); // 50 seconds
+        Serial.println("进入 deep sleep 50 秒...");
         esp_deep_sleep_start();
         /*
         disable timer adjustment for the sake of testing

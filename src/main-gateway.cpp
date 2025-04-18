@@ -90,7 +90,6 @@ void runTimeSync() {
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
     Serial.printf("Sending time sync to %d...", RH_BROADCAST_ADDRESS);
     runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
-
 }
 
 void receive() {

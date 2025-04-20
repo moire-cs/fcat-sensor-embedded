@@ -218,7 +218,6 @@ void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
     Serial.println("==============================================================");
 }
 
-/*
 void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
 
     Serial.println("Receiving mode active");
@@ -237,18 +236,18 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
             printPacket(*received);
             postData(*received);
-
+            /*
             for (int i = 0; i < MAX_MEASUREMENTS; i++) {
                  printMeasurements(received[i]);
 
             }
-
+            */
             // Resets msgRcv
             memset(msgRcv, 0, sizeof(msgRcv));
             esp_task_wdt_reset();
-
+            /*
             *we'll block this part for now, since we don't need to send a reply to the sender
-
+            */
 
             std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
             uint8_t _err = RHMeshManager_.sendtoWait(
@@ -262,7 +261,7 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
         //delay(50);
     }
 }
-*/
+/*
 // struct Measurement* packetInfo, , uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_
 void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     Serial.println("==============================================================");
@@ -319,4 +318,4 @@ void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
     esp_task_wdt_reset();
     Serial.println("退出 runGatewaySender 函数");
     Serial.println("==============================================================");
-}
+}*/

@@ -1,7 +1,7 @@
 //#include "radio_pinouts_and_constants.h"
 
 void postData(struct Packet p) {
-    String json = "{";
+    String json = "MESSAGE:{";
 
     // Node ID
     json += "\"nodeId\": \"" + String(p.node_number) + "\",";
@@ -11,13 +11,14 @@ void postData(struct Packet p) {
 
     // Times
     json += "\"times\": [";
-    bool firstTime = true;
-    for (int i = 0; i < MAX_MEASUREMENTS; i++) {
-        if (p.data[i].moisture_percent == 0 && p.data[i].temperature == 0) continue;
-        if (!firstTime) json += ",";
-        firstTime = false;
-        json += String(p.data[i].timestamp);
+    time_t now;
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+        // Serial.println("Failed to obtain time");
+        now = 0;
     }
+    time(&now);
+    json += String(now) ; // current time
     json += "],";
 
     // Messages

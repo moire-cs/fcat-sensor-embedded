@@ -1,4 +1,4 @@
-
+// Let's not do sendToWait for now, since it doesn't work
 #ifndef GATEWAY_ADDR
 #define GATEWAY_ADDR 1
 #endif
@@ -62,40 +62,22 @@ inline void txJitter(uint16_t max_ms = 800) {
 
 
 
-bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
-    // while at it, wait for a message from other nodes
-    Serial.println("--------------------------------------------------------------");
-    Serial.printf("Enter runReceiver，Wait Time: %d ms\n", wait_time);
-    Serial.printf("Current node address: %u\n", selfAddress_);
+bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf,
+    uint8_t* _msgRcvBufLen, uint8_t* _msgFrom,
+    RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+    Serial.printf("[TimeSync] Waiting up to %d ms...\n", wait_time);
 
-    if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
-
-        char buf_[RH_MESH_MAX_MESSAGE_LEN];
-
-        esp_task_wdt_reset();
-        Serial.println("Received a message for time sync from ");
-        Serial.println(*_msgFrom);
-        std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
-        timeSyncRcv = String(buf_).c_str();
-
-        // do something with message, for example pass it through a callback
-        Serial.printf("Rebroadcasting to available nodes...\n");
-
-        uint8_t _err = RHMeshManager_.sendtoWait(
-            reinterpret_cast<uint8_t*>(&timeSyncRcv[0]), timeSyncRcv.length(), GATEWAY_ADDR);
-        if (_err != RH_ROUTER_ERROR_NONE) {
-            Serial.println("Fail to send broadcast...");
-        }
-        esp_task_wdt_reset();
-        Serial.println("Time Sync successfully received, Existing runReceiver function");
-        Serial.println("--------------------------------------------------------------");
-        return true;
-        
+    if (!RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
+        Serial.println("[TimeSync] ❌ Timeout – did not receive settings.");
+        return false;
     }
-    esp_task_wdt_reset();
-    Serial.println("Not synchronized, exiting runReceiver function");
-    Serial.println("--------------------------------------------------------------");
-    return false;
+
+    char buf_[RH_MESH_MAX_MESSAGE_LEN];
+    std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
+    timeSyncRcv = String(buf_).c_str();
+    Serial.printf("[TimeSync] ✅ Received time sync from node %u: \"%s\"\n", *_msgFrom, buf_);
+
+    return true;
 }
 
 void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
@@ -214,6 +196,29 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
     Serial.println("----------------------------------------------------------------");
 }
 
+void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+    Serial.println("==============================================================");
+    Serial.println("进入 runGatewaySender 函数");
+    Serial.printf("待发送 gateway 设置内容: \"%s\"\n", settings.c_str());
+    Serial.printf("设置内容长度: %d 字节\n", settings.length());
+
+    Serial.println("调用 sendto() 广播消息...");
+    uint8_t _err = RHMeshManager_.sendto(
+        reinterpret_cast<uint8_t*>(&settings[0]),
+        settings.length(),
+        RH_BROADCAST_ADDRESS);
+
+    if (_err == RH_ROUTER_ERROR_NONE) {
+        Serial.println("[GatewaySender] ✅ Settings broadcasted successfully.");
+    } else {
+        Serial.printf("[GatewaySender] ❌ sendto failed. Error code: %d\n", _err);
+    }
+    esp_task_wdt_reset();
+    Serial.println("退出 runGatewaySender 函数");
+    Serial.println("==============================================================");
+}
+
+/*
 void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
 
     Serial.println("Receiving mode active");
@@ -232,18 +237,18 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
             printPacket(*received);
             postData(*received);
-            /*
+
             for (int i = 0; i < MAX_MEASUREMENTS; i++) {
                  printMeasurements(received[i]);
 
             }
-            */
+
             // Resets msgRcv
             memset(msgRcv, 0, sizeof(msgRcv));
             esp_task_wdt_reset();
-            /*
+
             *we'll block this part for now, since we don't need to send a reply to the sender
-            */
+
 
             std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
             uint8_t _err = RHMeshManager_.sendtoWait(
@@ -257,6 +262,7 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
         //delay(50);
     }
 }
+*/
 // struct Measurement* packetInfo, , uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_
 void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     Serial.println("==============================================================");
@@ -279,9 +285,9 @@ void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
         esp_task_wdt_reset();
         Serial.printf(" successfull! Awaiting for Reply\n");
         Serial.println("sendtoWait 结果: 发送成功！");
-        Serial.println("开始等待对端回复，超时时间: 250 毫秒...");
+        Serial.println("开始等待对端回复，超时时间: 1000 毫秒...");
         // This eventually will need to be replaced
-        if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 250, _msgFrom)) {
+        if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 1000, _msgFrom)) {
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
             std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
             //     // Measurement *received = reinterpret_cast<Measurement *>(buf_);

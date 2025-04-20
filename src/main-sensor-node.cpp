@@ -118,11 +118,11 @@ void wait() {
                       duration, (int)num_measurements,
                       time_sync_tolerance, mesh_sync_tolerance, timer);
 
-        state = RECEIVING;
+        state = SENSING;
         Serial.println("[wait] ➜ state = RECEIVING");       // [LOG]
     } 
     else {
-        state = RECEIVING;
+        state = SENSING;
         Serial.println("[wait] Time‑sync failed, will retry next cycle");  // [LOG]
     }
 }

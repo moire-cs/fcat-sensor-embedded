@@ -23,7 +23,7 @@ const uint64_t microsecond = 1000000ULL; // 1 s = 1e6 us
 float duration;
 void rhSetup();
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
-void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
+void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_);
 void wait();
 void send();
@@ -127,6 +127,29 @@ void wait() {
     }
 }
 
+void send() {
+    // [LOG]
+    Serial.println("\n====== send() ======");    
+
+    esp_task_wdt_reset();
+    uint8_t _msgFrom;
+    uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
+
+    Serial.printf("[send] Target address = %d\n", GATEWAY_ADDR);    // [LOG]
+
+    // The original call
+    runSender(_msgRcvBuf, &_msgRcvBufLen,
+              &_msgFrom, RFM95Modem_, RHMeshManager_);
+
+    // Prepare for next readings
+    isFull = false;
+    clearReadings();
+
+    // [LOG]
+    Serial.println("[send] Readings cleared, isFull reset → SENSING");
+
+    state = SENSING;
+}
 
 
 void receive() {

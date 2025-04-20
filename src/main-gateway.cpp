@@ -97,6 +97,7 @@ void receive() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
+    esp_task_wdt_init(60, true);
     runGatewayReceiver(15 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 }
 

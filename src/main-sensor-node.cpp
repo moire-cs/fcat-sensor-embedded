@@ -35,7 +35,7 @@ static const char* TAG = "ArduinoTask";
 // ---------------------------------------------------------
 // Setups：
 // ---------------------------------------------------------
-#define ARDUINO_TASK_STACK_SIZE 8192    // stack for arduino task; due to change; try 8192
+#define ARDUINO_TASK_STACK_SIZE 16348    // stack for arduino task; due to change; try 8192
 #define ARDUINO_TASK_PRIORITY    5       // Arduino task priority
 
 // 全局变量，用于记录每个周期的起始时间（单位：微秒），全部基于 esp_timer_get_time()
@@ -147,21 +147,20 @@ void send() {
 
     // [LOG]
     Serial.println("[send] Readings cleared, isFull reset → SENSING");
-
-    state = SENSING;
 }
 
 
 void receive() {
-    /*esp_task_wdt_reset();
+    Serial.println("\n====== receive() ======");
+    esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
 
     Serial.println("Receiving mode active");
     // We need to be receiving for a random time
     uint16_t wait_time = random(1000, 5000);
-    runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);*/
-    Serial.println("\n====== receive() ======"); 
+    runReceiver(wait_time, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
+     
     esp_task_wdt_reset();
     Serial.println("[receive] (placeholder) ➜ state = SENDING");
     state = SENDING;
@@ -243,7 +242,6 @@ extern "C" void app_main(void) {
             ESP_LOGI(TAG, "Sensor task 周期完成");
         }
         // Task delete
-        vTaskDelete(sensorTaskHandle);
         ESP_LOGI(TAG, "Sensor task Deleted");
 
         gettimeofday(&end, NULL);                       // NEW：记录周期终点

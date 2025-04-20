@@ -1,9 +1,12 @@
-//#include "radio_pinouts_and_constants.h"
+
 #ifndef GATEWAY_ADDR
 #define GATEWAY_ADDR 1
 #endif
 
 void postData(struct Packet p) {
+    if (p.node_number == 0 && p.data == nullptr) {
+        Serial.println("[ERROR] postData received invalid Packet");
+        return;}
     String json = "MESSAGE:{";
 
     // Node ID
@@ -115,6 +118,10 @@ void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen
 
         // msgRcv = (struct Measurement)buf_; // should be able to set it to this
         Measurement* received = reinterpret_cast<Measurement*>(&buf_);
+        if (received == nullptr) {
+            Serial.println("[ERROR] Received null measurement pointer");
+            return;
+        }
         // do something with message, for example pass it through a callback
         Serial.printf("[%d] Received measurement. RSSI: %d\n", *_msgFrom, RFM95Modem_.lastRssi());
         printMeasurement(*received); 
@@ -177,7 +184,7 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
         Serial.printf("Packet sent successfull!");
         
         //We'll blcok this part for now, since we don't need to send a reply to the sender
-        /*
+
         Serial.printf("Awaiting for Reply\n");
 
         if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 3000, _msgFrom)) {
@@ -191,7 +198,7 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
         }
         else {
             Serial.println("No reply, is the target node running?");
-        }*/
+        }
 
         // esp_task_wdt_reset();
     }
@@ -237,13 +244,13 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
             /*
             *we'll block this part for now, since we don't need to send a reply to the sender
             */
-           /*
+
             std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
             uint8_t _err = RHMeshManager_.sendtoWait(
                 reinterpret_cast<uint8_t*>(&_msgRply[0]), _msgRply.size(), *_msgFrom);
             if (_err != RH_ROUTER_ERROR_NONE) {
                 Serial.println("Fail to send reply...");
-            }*/
+            }
             esp_task_wdt_reset();
         }
         esp_task_wdt_reset();
@@ -260,7 +267,10 @@ void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
      
      // 使用 sendtoWait 发送数据，当前通过广播地址发送
      Serial.println("调用 sendtoWait() 发送消息...");
-    uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&settings[0]), settings.length(), GATEWAY_ADDR);
+     uint8_t _err = RHMeshManager_.sendtoWait(
+        reinterpret_cast<uint8_t*>(&settings[0]),
+        settings.length(),
+        RH_BROADCAST_ADDRESS);
 
 
     if (_err == RH_ROUTER_ERROR_NONE) {

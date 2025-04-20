@@ -41,6 +41,7 @@ void setup() {
     esp_task_wdt_add(NULL);
 
     rhSetup();
+    uint8_t selfAddress_ = 1;
     Serial.println(" ---------------- GATEWAY " + String(selfAddress_) +
         " INIT ---------------- ");
     Serial.println("Now run time sync...");

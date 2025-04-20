@@ -105,7 +105,7 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
-const uint8_t selfAddress_ = 1;      // CHANGE THIS!!!
+uint8_t selfAddress_ = 1;      // CHANGE THIS!!!
 //const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif
 
@@ -127,7 +127,14 @@ int intRcv[MAX_MEASUREMENTS];
 uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 uint8_t _timeSyncRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 
+uint8_t determineSelfAddress() {
+    uint64_t mac = ESP.getEfuseMac();
+    uint8_t last_byte = (mac >> 0) & 0xFF;
+    return 2 + (last_byte % 250);  // avoids 0 and 1 (保留给网关)
+}
+
 void rhSetup() {
+    selfAddress_ = determineSelfAddress();
     if (!RHMeshManager_.init())
         Serial.println("init failed");
     RFM95Modem_.setTxPower(17, false);

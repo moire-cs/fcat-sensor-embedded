@@ -154,7 +154,7 @@ void sense() {
     bool isFullLocal = saveReading(m);
     Serial.printf("[sense] saveReading → isFull=%d\n", isFullLocal);
 
-    state = (isFullLocal && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
+    //state = (isFullLocal && selfAddress_ != ENDNODE_ADDRESS) ? WAITING : SENSING;
     state = RECEIVING;
     Serial.printf("[sense] Next state = %d\n", state);
     

@@ -44,7 +44,6 @@ void setup() {
     Serial.println(" ---------------- GATEWAY " + String(selfAddress_) +
         " INIT ---------------- ");
     Serial.println("Now run time sync...");
-    runTimeSync();
 }
 
 // uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
@@ -77,6 +76,7 @@ void loop() {
     gettimeofday(&start, NULL);
     epochTime = getTime();
     Serial.println("Current epoch time: " + String(epochTime));
+    runTimeSync();
     // GET route to receive information from backend (cycle period, num measurements, etc.)
     // unsigned long gatewaySleep = 24; // hours
     receive();

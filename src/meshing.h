@@ -1,4 +1,7 @@
 //#include "radio_pinouts_and_constants.h"
+#ifndef GATEWAY_ADDR
+#define GATEWAY_ADDR 1
+#endif
 
 void postData(struct Packet p) {
     String json = "MESSAGE:{";
@@ -47,11 +50,21 @@ void postData(struct Packet p) {
 }
 
 
+// ② Add randomized delay (0–max_ms ms) to reduce collisions
+inline void txJitter(uint16_t max_ms = 800) {
+    uint32_t r = esp_random() % max_ms;
+    // Serial.printf("Random delay: %d ms\n", r);
+    vTaskDelay(pdMS_TO_TICKS(r));
+}
+
+
+
 bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // while at it, wait for a message from other nodes
     Serial.println("--------------------------------------------------------------");
-    Serial.printf("进入 runReceiver 函数，等待时间: %d 毫秒\n", wait_time);
-    Serial.printf("当前节点地址: %u\n", selfAddress_);
+    Serial.printf("Enter runReceiver，Wait Time: %d ms\n", wait_time);
+    Serial.printf("Current node address: %u\n", selfAddress_);
+
     if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
 
         char buf_[RH_MESH_MAX_MESSAGE_LEN];
@@ -66,18 +79,18 @@ bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgR
         Serial.printf("Rebroadcasting to available nodes...\n");
 
         uint8_t _err = RHMeshManager_.sendtoWait(
-            reinterpret_cast<uint8_t*>(&timeSyncRcv[0]), timeSyncRcv.length(), RH_BROADCAST_ADDRESS);
+            reinterpret_cast<uint8_t*>(&timeSyncRcv[0]), timeSyncRcv.length(), GATEWAY_ADDR);
         if (_err != RH_ROUTER_ERROR_NONE) {
             Serial.println("Fail to send broadcast...");
         }
         esp_task_wdt_reset();
-        Serial.println("已同步，退出 runTimeSync 函数");
+        Serial.println("Time Sync successfully received, Existing runReceiver function");
         Serial.println("--------------------------------------------------------------");
         return true;
         
     }
     esp_task_wdt_reset();
-    Serial.println("未同步，退出 runTimeSync 函数");
+    Serial.println("Not synchronized, exiting runReceiver function");
     Serial.println("--------------------------------------------------------------");
     return false;
 }
@@ -86,19 +99,18 @@ void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen
     // while at it, wait for a message from other nodes
     // TODO: I don't believe this node passes on the message
     Serial.println("--------------------------------------------------------------");
-    Serial.printf("进入 runReceiver 函数，等待时间: %d 毫秒\n", wait_time);
-    Serial.printf("当前节点地址: %u\n", selfAddress_);
-    Serial.printf("目标节点地址（原始传入参数）: %u\n", *_msgFrom);
+    Serial.printf("Enter runReceiver function, wait time: %d ms\n", wait_time);
+    Serial.printf("Current node address: %u\n", selfAddress_);
+    Serial.printf("Target node Location: %u\n", *_msgFrom);
     if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
-        Serial.println("检测到收到消息的信号！");
+        Serial.println("Received a message！");
         // char buf_[RH_MESH_MAX_MESSAGE_LEN];
         char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
         esp_task_wdt_reset();
         Serial.println("Received a message");
         std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
-        // 将接收到的缓冲区转换为字符串
-        Serial.printf("接收到的原始消息内容（字符串化）：\"%s\"\n", buf_);
+        Serial.printf("Original Message received (as string)：\"%s\"\n", buf_);
 
 
         // msgRcv = (struct Measurement)buf_; // should be able to set it to this
@@ -119,18 +131,20 @@ void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen
         esp_task_wdt_reset();
 
     }
-    Serial.println("退出 runReceiver 函数");
+    Serial.println("Exiting runReceiver function");
     Serial.println("--------------------------------------------------------------");
 }
 
-void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // Need to look into sending structs over this
     // print logs
     Serial.println("----------------------------------------------------------------");
     Serial.println("进入 runSender 函数");
     Serial.printf("当前节点地址: %u\n", selfAddress_);
-    Serial.printf("目标节点地址（原始传入参数）: %u\n", targetAddress_);
+   // Serial.printf("目标节点地址（原始传入参数）: %u\n", targetAddress_);
     Serial.println("开始构造数据包...");
+    Serial.printf("[Send] Node %u → Gateway %u\n",
+        selfAddress_, GATEWAY_ADDR);
 
     Packet p;
     p.node_number = selfAddress_;
@@ -141,15 +155,20 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
     for (int i = 0; i < MAX_MEASUREMENTS; i++) {
         memcpy(&p.data[i], &measurements[i], sizeof(Measurement));
     }
-    Serial.printf("数据包构造完成，数据包大小：%d 字节\n", sizeof(p));
+    Serial.printf("Packet formed,Packet size: %d bits\n", sizeof(p));
+    // 2. Add jitter to avoid synchronized sends across nodes
+    txJitter();  // Default: random 0–800ms
 
-    //For now we broadcast to all for the sake of testing
-    Serial.println("正在发送数据包至广播地址...");
-    uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), RH_BROADCAST_ADDRESS); 
+
+    //Sample code for broadcasting to all for the sake of testing
+    Serial.println("Sending Packet...");
+    //uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), RH_BROADCAST_ADDRESS); 
 
     //original code
     //uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), targetAddress_); 
-
+    
+    uint8_t _err = RHMeshManager_.sendtoWait(
+        reinterpret_cast<uint8_t*>(&p), sizeof(p), GATEWAY_ADDR);
 
     if (_err == RH_ROUTER_ERROR_NONE) {
         // message successfully be sent to the target node, or next neighboring
@@ -241,7 +260,7 @@ void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
      
      // 使用 sendtoWait 发送数据，当前通过广播地址发送
      Serial.println("调用 sendtoWait() 发送消息...");
-    uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&settings[0]), settings.length(), RH_BROADCAST_ADDRESS);
+    uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&settings[0]), settings.length(), GATEWAY_ADDR);
 
 
     if (_err == RH_ROUTER_ERROR_NONE) {

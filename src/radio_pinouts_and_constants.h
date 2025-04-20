@@ -106,7 +106,7 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 // selfAddress is node
 // targetAddress will be our gateway
 const uint8_t selfAddress_ = NODE_ADDRESS_1;      // CHANGE THIS!!!
-const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
+//const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif
 
 // radio driver & message mesh delivery/receipt manager

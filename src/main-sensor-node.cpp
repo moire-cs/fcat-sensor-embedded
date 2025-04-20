@@ -13,9 +13,8 @@
 #include "meshing.h"
 #include "measurement.h"
 #include "soc/rtc_cntl_reg.h"
-
 #include "esp_attr.h" 
-RTC_DATA_ATTR bool hasTimeSync = false;   // deep‑sleep 之后仍然保存
+
 
 timeval start, tv_now;
 timeval end;
@@ -90,16 +89,7 @@ void arduinoTask(void *pvParameters) {
 
 
 void wait() {
-    // [LOG] —— 函数入口
     Serial.println("\n====== wait()  ======");      
-
-    if (hasTimeSync) {
-        // [LOG]
-        Serial.println("[wait] hasTimeSync == true ➜ skip to SENSING");
-        state = SENSING;
-        return;
-    }
-
     uint8_t _msgFrom;
     uint8_t _timeSyncRcvBufLen = sizeof(_timeSyncRcvBuf);
     Serial.println("[wait] waiting for gateway…");   // [LOG]
@@ -112,7 +102,6 @@ void wait() {
         Serial.printf("[wait] Received data from node %d\n", _msgFrom); 
         Serial.printf("[wait] Raw payload: \"%s\"\n", timeSyncRcv.c_str());
 
-
         int data_count = 4;
         float* tokens = (float*)malloc(sizeof(float) * data_count);
         splitn(tokens, timeSyncRcv.c_str(), ", ", data_count);
@@ -124,12 +113,11 @@ void wait() {
 
         timer = duration * hours_to_seconds / num_measurements;
 
-        Serial.printf("[wait] Parsed: duration=%.3f h, num=%d, "
+        Serial.printf("[wait] Parsed: duration=%.3f h, num=%d, "
                       "syncTol=%.3f, meshTol=%.3f, timer(us)=%llu\n",
                       duration, (int)num_measurements,
                       time_sync_tolerance, mesh_sync_tolerance, timer);
 
-        hasTimeSync = true;
         state = RECEIVING;
         Serial.println("[wait] ➜ state = RECEIVING");       // [LOG]
     } 
@@ -139,30 +127,6 @@ void wait() {
     }
 }
 
-
-void send() {
-    // [LOG]
-    Serial.println("\n====== send() ======");    
-
-    esp_task_wdt_reset();
-    uint8_t _msgFrom;
-    uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-
-    Serial.printf("[send] Target address = %d\n", targetAddress_);    // [LOG]
-
-    // The original call
-    runSender(targetAddress_, _msgRcvBuf, &_msgRcvBufLen,
-              &_msgFrom, RFM95Modem_, RHMeshManager_);
-
-    // Prepare for next readings
-    isFull = false;
-    clearReadings();
-
-    // [LOG]
-    Serial.println("[send] Readings cleared, isFull reset → SENSING");
-
-    state = SENSING;
-}
 
 
 void receive() {
@@ -222,7 +186,7 @@ extern "C" void app_main(void) {
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
     measureSetup();
     rhSetup();
-    state = hasTimeSync ? SENSING : WAITING;
+    state = WAITING;
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
                    " INIT ---------------- ");
 

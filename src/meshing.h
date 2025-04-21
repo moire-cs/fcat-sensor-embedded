@@ -1,4 +1,4 @@
-// Let's not do sendToWait for now, since it doesn't work
+
 #ifndef GATEWAY_ADDR
 #define GATEWAY_ADDR 1
 #endif
@@ -13,7 +13,7 @@ void postData(struct Packet p) {
     json += "\"nodeId\": \"" + String(p.node_number) + "\",";
 
     // Sensors
-    json += "\"sensors\": [\"moisture\",\"temperature\",\"humidity\",\"light\",\"battery\"],";
+    json += "\"sensors\": [\"0\",\"1\",\"2\",\"3\",\"4\"],";
 
     // Times
     json += "\"times\": [";
@@ -166,7 +166,7 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
         Serial.printf("Packet sent successfull!");
         
         //We'll blcok this part for now, since we don't need to send a reply to the sender
-
+/*
         Serial.printf("Awaiting for Reply\n");
 
         if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 3000, _msgFrom)) {
@@ -191,11 +191,11 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
 
         // TODO: If nobody received, up power? Maybe a function to do default power applied (starts at low value and increases, then stays at whatever value works)
     }
-    esp_task_wdt_reset();
+    esp_task_wdt_reset();*/
     Serial.println("退出 runSender 函数");
     Serial.println("----------------------------------------------------------------");
 }
-
+}
 void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     Serial.println("==============================================================");
     Serial.println("进入 runGatewaySender 函数");

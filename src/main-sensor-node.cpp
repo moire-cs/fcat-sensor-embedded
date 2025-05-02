@@ -38,7 +38,8 @@ static const char* TAG = "ArduinoTask";
 #define ARDUINO_TASK_STACK_SIZE 16348    // stack for arduino task; due to change; try 8192
 #define ARDUINO_TASK_PRIORITY    5       // Arduino task priority
 
-// 全局变量，用于记录每个周期的起始时间（单位：微秒），全部基于 esp_timer_get_time()
+// Global variable used to record the start time of each cycle (in microseconds), all based on esp_timer_get_time()
+
 uint64_t start_time;
 
 // Define the bit in the event group used to indicate Arduino task completion
@@ -58,8 +59,8 @@ EventGroupHandle_t arduino_event_group = NULL;
 //Everything but timing
 // ---------------------------------------------------------
 void arduinoTask(void *pvParameters) {
-// 执行状态机的一个完整周期：
-    // 按照原代码的状态顺序： WAITING -> SENSING -> RECEIVING -> SENDING
+    // Execute one full cycle of the state machine:
+    // According to the original order: WAITING -> SENSING -> RECEIVING -> SENDING
 
     while (1) {
         Serial.printf("[SensorNode] Current state: %d\n", state);
@@ -81,8 +82,8 @@ void arduinoTask(void *pvParameters) {
                 break;
         }
     }
-    cycle_end:
-    // 通知主任务：本周期结束
+cycle_end:
+    // Notify main task: current cycle completed
     xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
     vTaskDelete(NULL); // kill itself
 }
@@ -193,16 +194,16 @@ void sense() {
 //    then delete the task, wait for a delay, and recreate the task to form a periodic cycle.
 // ---------------------------------------------------------
 extern "C" void app_main(void) {
-    // 初始化 Arduino 环境和 Serial
+    // Initialize Arduino environment and Serial
     initArduino();
     Serial.begin(115200);
     vTaskDelay(pdMS_TO_TICKS(1000));
-    ESP_LOGI(TAG, "ESP-IDF sensor_node app_main 启动");
+    ESP_LOGI(TAG, "ESP-IDF sensor_node app_main started");
 
-    // 设置 WiFi 为 NULL 模式（若不需要WiFi）
+    // Set WiFi to NULL mode (if WiFi is not needed)
     esp_wifi_set_mode(WIFI_MODE_NULL);
 
-    // 初始化看门狗、ADC、传感器、无线模块等
+    // Initialize watchdog, ADC, sensors, radio module, etc.
     esp_task_wdt_init(WDT_TIMEOUT, true);
     esp_task_wdt_add(NULL);
     adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_0db);
@@ -212,13 +213,13 @@ extern "C" void app_main(void) {
     Serial.println(" ---------------- LORA NODE " + String(selfAddress_) +
                    " INIT ---------------- ");
 
-    // 创建事件组，用于传递任务完成信号
+    // Create event group for signaling task completion
     arduino_event_group = xEventGroupCreate();
 
-    // 主循环：反复创建 sensorTask 任务，等待其完成后再延时到下一个周期
+    // Main loop: repeatedly create sensorTask, wait for it to complete, then delay to next cycle
     while (true) {
-        // 创建 sensorNode 任务（静态内存分配）
-        gettimeofday(&start, NULL); 
+        // Create sensorNode task (static memory allocation)
+        gettimeofday(&start, NULL);
         TaskHandle_t sensorTaskHandle = xTaskCreateStatic(
             arduinoTask,
             "arduinoTask",
@@ -228,9 +229,9 @@ extern "C" void app_main(void) {
             arduinoTaskStack,
             &arduinoTaskTCB
         );
-        ESP_LOGI(TAG, "Sensor task 创建成功");
+        ESP_LOGI(TAG, "Sensor task created successfully");
 
-        // 等待 sensorTask 完成一个完整周期（事件组等待）
+        // Wait for sensorTask to complete one full cycle (wait for event group)
         EventBits_t bits = xEventGroupWaitBits(
             arduino_event_group,
             ARDUINO_FINISHED_BIT,
@@ -239,29 +240,30 @@ extern "C" void app_main(void) {
             portMAX_DELAY
         );
         if (bits & ARDUINO_FINISHED_BIT) {
-            ESP_LOGI(TAG, "Sensor task 周期完成");
+            ESP_LOGI(TAG, "Sensor task cycle completed");
         }
         // Task delete
-        ESP_LOGI(TAG, "Sensor task Deleted");
+        ESP_LOGI(TAG, "Sensor task deleted");
 
-        gettimeofday(&end, NULL);                       // NEW：记录周期终点
+        gettimeofday(&end, NULL);                       // NEW: record cycle end time
         uint64_t time_taken_us = (end.tv_sec  - start.tv_sec)  * microsecond
                             + (end.tv_usec - start.tv_usec);
 
-        const uint64_t TARGET_US = 50ULL * microsecond;        // 和 gateway 一致 50 s
+        const uint64_t TARGET_US = 50ULL * microsecond;        // Match 50 s with gateway
 
         uint64_t sleep_us = (time_taken_us < TARGET_US)
                         ? (TARGET_US - time_taken_us)
-                        : 100000ULL;                           // 若超时，至少睡 0.1 s
+                        : 100000ULL;                           // If overtime, sleep at least 0.1 s
 
-        Serial.printf("Cycle exec: %.2f s, deep‑sleep: %.2f s\n",
+        Serial.printf("Cycle exec: %.2f s, deep-sleep: %.2f s\n",
                     time_taken_us / 1e6, sleep_us / 1e6);
 
         esp_sleep_enable_timer_wakeup(sleep_us);
-        Serial.println("进入 deep sleep …");
+        Serial.println("Entering deep sleep …");
         esp_deep_sleep_start();
     }
 }
+
 
 
 

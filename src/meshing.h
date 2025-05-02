@@ -128,10 +128,10 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
     // Need to look into sending structs over this
     // print logs
     Serial.println("----------------------------------------------------------------");
-    Serial.println("进入 runSender 函数");
-    Serial.printf("当前节点地址: %u\n", selfAddress_);
-   // Serial.printf("目标节点地址（原始传入参数）: %u\n", targetAddress_);
-    Serial.println("开始构造数据包...");
+    Serial.println("Entering runSender function");
+    Serial.printf("Current node address: %u\n", selfAddress_);
+    // Serial.printf("Target node address (original input): %u\n", targetAddress_);
+    Serial.println("Starting to construct data packet...");
     Serial.printf("[Send] Node %u → Gateway %u\n",
         selfAddress_, GATEWAY_ADDR);
 
@@ -192,17 +192,17 @@ void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, R
         // TODO: If nobody received, up power? Maybe a function to do default power applied (starts at low value and increases, then stays at whatever value works)
     }
     esp_task_wdt_reset();*/
-    Serial.println("退出 runSender 函数");
+    Serial.println("Exits runSender function");
     Serial.println("----------------------------------------------------------------");
 }
 }
 void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     Serial.println("==============================================================");
-    Serial.println("进入 runGatewaySender 函数");
-    Serial.printf("待发送 gateway 设置内容: \"%s\"\n", settings.c_str());
-    Serial.printf("设置内容长度: %d 字节\n", settings.length());
+    Serial.println("Entering runGatewaySender function");
+    Serial.printf("Gateway settings to be sent: \"%s\"\n", settings.c_str());
+    Serial.printf("Settings length: %d bytes\n", settings.length());
 
-    Serial.println("调用 sendto() 广播消息...");
+    Serial.println("Calling sendto() to broadcast message...");
     const char* cstr = settings.c_str();
     uint8_t _err = RHMeshManager_.sendto((uint8_t*)cstr, settings.length(), RH_BROADCAST_ADDRESS);
     if (_err == RH_ROUTER_ERROR_NONE) {
@@ -211,7 +211,7 @@ void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
         Serial.printf("[GatewaySender] ❌ sendto failed. Error code: %d\n", _err);
     }
     esp_task_wdt_reset();
-    Serial.println("退出 runGatewaySender 函数");
+    Serial.println("Exit runGatewaySender function");
     Serial.println("==============================================================");
 }
 
@@ -266,58 +266,52 @@ void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 // struct Measurement* packetInfo, , uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_
 void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     Serial.println("==============================================================");
-    Serial.println("进入 runGatewaySender 函数");
-     // 打印发送的设置字符串及其长度
-     Serial.printf("待发送 gateway 设置内容: \"%s\"\n", settings.c_str());
-     Serial.printf("设置内容长度: %d 字节\n", settings.length());
-     
-     // 使用 sendtoWait 发送数据，当前通过广播地址发送
-     Serial.println("调用 sendtoWait() 发送消息...");
-     uint8_t _err = RHMeshManager_.sendtoWait(
+    Serial.println("Entering runGatewaySender function");
+
+    // Print the settings string to be sent and its length
+    Serial.printf("Gateway settings to be sent: \"%s\"\n", settings.c_str());
+    Serial.printf("Settings length: %d bytes\n", settings.length());
+
+    // Use sendtoWait to send data, currently broadcasting to all nodes
+    Serial.println("Calling sendtoWait() to send message...");
+    uint8_t _err = RHMeshManager_.sendtoWait(
         reinterpret_cast<uint8_t*>(&settings[0]),
         settings.length(),
         RH_BROADCAST_ADDRESS);
 
-
     if (_err == RH_ROUTER_ERROR_NONE) {
-        // message successfully be sent to the target node, or next neighboring
-        // expecting to recieve a simple reply from the target node
+        // Message successfully sent to the target or a neighboring node
+        // Expecting a simple reply from the target node
         esp_task_wdt_reset();
-        Serial.printf(" successfull! Awaiting for Reply\n");
-        Serial.println("sendtoWait 结果: 发送成功！");
-        Serial.println("开始等待对端回复，超时时间: 1000 毫秒...");
-        // This eventually will need to be replaced
+        Serial.printf("Successfully sent! Awaiting reply...\n");
+        Serial.println("sendtoWait result: success!");
+        Serial.println("Waiting for a reply from the other side, timeout: 1000 ms...");
+
         if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 1000, _msgFrom)) {
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
             std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
-            //     // Measurement *received = reinterpret_cast<Measurement *>(buf_);
 
-
-            //String received = String(buf_).c_str();
-            // Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
-            //     received.c_str(), RFM95Modem_.lastRssi());
-            // return received data as a string to print logs
             String received = String(buf_);
-            Serial.printf("收到来自节点 [%d] 的回复：\"%s\"\n", *_msgFrom, received.c_str());
-            Serial.printf("该回复的 RSSI 值为: %d\n", RFM95Modem_.lastRssi());
+            Serial.printf("Received reply from node [%d]: \"%s\"\n", *_msgFrom, received.c_str());
+            Serial.printf("RSSI value of the reply: %d\n", RFM95Modem_.lastRssi());
             Serial.println(received);
         }
         else {
-            Serial.println("No reply, is the target node running?");
+            Serial.println("No reply received. Is the target node running?");
         }
 
         esp_task_wdt_reset();
     }
     else {
-        Serial.println(
-            "sendtoWait failed. No response from intermediary node, are they "
-            "running?");
-        Serial.printf("返回错误码: %d\n", _err);
+        Serial.println("sendtoWait failed. No response from intermediary node. Are they running?");
+        Serial.printf("Returned error code: %d\n", _err);
 
-        // TODO: If nobody received, up power? Maybe a function to do default power applied (starts at low value and increases, then stays at whatever value works)
+        // TODO: If no node received it, consider increasing power level dynamically
     }
+
     esp_task_wdt_reset();
-    Serial.println("退出 runGatewaySender 函数");
+    Serial.println("Exiting runGatewaySender function");
     Serial.println("==============================================================");
 }
+
 */

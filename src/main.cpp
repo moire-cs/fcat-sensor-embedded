@@ -16,146 +16,127 @@
 #include <EEPROM.h>
 #include "esp_timer.h"
 
-
-// 日志标签（ESP-IDF 风格）
+// Log tag (ESP-IDF style)
 static const char* TAG = "APP";
-
-// ---------------------------------------------------------
-// 全局时间变量，等到wifi和radio再搞进去：
-// ---------------------------------------------------------
-//struct timeval tv_now;
-//struct timeval start;
 
 RTC_DATA_ATTR int64_t start_time;
 
-// ---------------------------------------------------------
-// 配置参数：
-// ---------------------------------------------------------
-#define ARDUINO_TASK_STACK_SIZE 4096    // 分配给 Arduino 任务的栈大小（字节）; due to change
-#define ARDUINO_TASK_PRIORITY    5       // Arduino 任务优先级
+// Configuration parameters
+#define ARDUINO_TASK_STACK_SIZE 4096    // Stack size for Arduino task (bytes); due to change
+#define ARDUINO_TASK_PRIORITY    5       // Arduino task priority
 
-// 定义事件组中用于标识 Arduino 任务完成工作的位
+// Bit in event group indicating Arduino task completion
 #define ARDUINO_FINISHED_BIT     (1 << 0)
 
-// ---------------------------------------------------------
-// 静态分配内存：用于创建 Arduino 任务
-// ---------------------------------------------------------
+// Static memory allocation for Arduino task creation
 static StaticTask_t arduinoTaskTCB;
 static StackType_t arduinoTaskStack[ARDUINO_TASK_STACK_SIZE];
 
-// 全局事件组句柄，用于 Arduino 任务通知主任务
+// Global event group handle for Arduino task notification to main task
 EventGroupHandle_t arduino_event_group = NULL;
 
-// ---------------------------------------------------------
-// Arduino 任务函数
-//
-// 目前只放sensor任务进来
-// ---------------------------------------------------------
+// Arduino task function
+// Currently only contains sensor tasks
 void arduinoTask(void *pvParameters) {
-    Serial.println("现在是 arduino");
+    Serial.println("Arduino task running");
 
-    //初始化sensor
+    // Initialize sensor
     measureSetup();
 
-    //测量数据
+    // Perform measurements
     Measurement currentReading = getReadings();
     boolean isFull = saveReading(currentReading);
 
-    // 如果未达到存储上限，则进入睡眠模式
+    // If storage limit is not reached, print the readings
     if (!isFull) {
         Serial.println("Printing");
     }
     printReadings();
     clearReadings();
-    // 任务完成主要工作后，发送完成信号给主任务
+
+    // Notify main task that the work is completed
     xEventGroupSetBits(arduino_event_group, ARDUINO_FINISHED_BIT);
 
-    // 进入无限循环等待主任务删除
+    // Enter infinite loop waiting for main task to delete
     while (true) {
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
-// ---------------------------------------------------------
-// 利用外部 32.768kHz 晶振的 RTC 校准数据调整深睡眠时间
-//
-// 参数：
-//   sleep_time_us - 期望深睡眠时间（微秒）
-//   cal_ref       - 理想参考校准值，通常设为 32768
-// ---------------------------------------------------------
 /*
+// Adjust deep sleep time using RTC calibration data from external 32.768kHz crystal
+// Parameters:
+//   sleep_time_us - Desired deep sleep duration in microseconds
+//   cal_ref       - Ideal reference calibration value, typically 32768
+
 void start_adjusted_deep_sleep(uint64_t sleep_time_us, uint32_t cal_ref) {
 
     uint32_t cal_device = esp_clk_slowclk_cal_get();
-    ESP_LOGI(TAG, "RTC 校准: %u", cal_device);
+    ESP_LOGI(TAG, "RTC calibration: %u", cal_device);
 
     uint64_t adjusted_sleep_time_us = sleep_time_us * cal_ref / cal_device;
-    ESP_LOGI(TAG, "RTC 校准: 设备 = %u, 参考 = %u, 调整后睡眠时间 = %llu us",
+    ESP_LOGI(TAG, "RTC calibration: device = %u, reference = %u, adjusted sleep time = %llu us",
              cal_device, cal_ref, adjusted_sleep_time_us);
 
     esp_sleep_enable_timer_wakeup(adjusted_sleep_time_us);
     esp_deep_sleep_start();
-}*/
+}
+*/
 
-// ---------------------------------------------------------
-// ESP-IDF 主入口函数
-// 1. 调用 initArduino() 初始化 Arduino 环境；
-// 2. 创建事件组供 Arduino 任务与主任务通信；
-// 3. 在循环中，静态创建 Arduino 任务，等待 Arduino 发出完成信号后删除任务，
-//    然后延时后重新创建任务，形成周期性循环。
-// ---------------------------------------------------------
+// Main entry point for ESP-IDF application
+// 1. Initialize Arduino environment using initArduino()
+// 2. Create event group for communication between Arduino task and main task
+// 3. In a loop, statically create the Arduino task, wait for completion signal from Arduino task,
+//    delete the task, and recreate it after a delay, forming a periodic loop.
 extern "C" void app_main(void) {
- 
-    
-    // 初始化 Arduino 环境
+    // Initialize Arduino environment
     initArduino();
 
-    // 初始化 Serial（如未在 initArduino() 内部自动初始化）
+    // Initialize Serial (if not initialized by initArduino())
     Serial.begin(115200);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    ESP_LOGI(TAG, "ESP-IDF app_main 启动");
+    ESP_LOGI(TAG, "ESP-IDF app_main started");
 
-    // 创建事件组，用于接收 Arduino 任务完成信号
+    // Create event group to receive completion signal from Arduino task
     arduino_event_group = xEventGroupCreate();
 
     while (true) {
-        // 创建 Arduino 任务（静态内存分配）
+        // Create Arduino task (static memory allocation)
         TaskHandle_t arduinoTaskHandle = xTaskCreateStatic(
-            arduinoTask,                 // 任务入口函数
-            "arduinoTask",               // 任务名称
-            ARDUINO_TASK_STACK_SIZE,     // 栈大小（字节）
-            NULL,                        // 任务参数（此处未使用）
-            ARDUINO_TASK_PRIORITY,       // 任务优先级
-            arduinoTaskStack,            // 静态分配的栈内存
-            &arduinoTaskTCB              // 静态分配的任务控制块
+            arduinoTask,                 // Task entry function
+            "arduinoTask",               // Task name
+            ARDUINO_TASK_STACK_SIZE,     // Stack size (bytes)
+            NULL,                        // Task parameters (unused here)
+            ARDUINO_TASK_PRIORITY,       // Task priority
+            arduinoTaskStack,            // Static stack memory
+            &arduinoTaskTCB              // Static task control block
         );
-        ESP_LOGI(TAG, "Arduino 任务创建成功");
+        ESP_LOGI(TAG, "Arduino task created successfully");
 
-        // 等待 Arduino 任务发送完成信号（阻塞等待）
+        // Wait for completion signal from Arduino task (blocking wait)
         EventBits_t bits = xEventGroupWaitBits(
-            arduino_event_group,        // 事件组句柄
-            ARDUINO_FINISHED_BIT,       // 需要等待的位
-            pdTRUE,                     // 自动清除接收到的位
-            pdFALSE,                    // 不要求同时等待多个位
-            portMAX_DELAY               // 无限等待
+            arduino_event_group,        // Event group handle
+            ARDUINO_FINISHED_BIT,       // Bit to wait for
+            pdTRUE,                     // Auto-clear the bit upon receiving
+            pdFALSE,                    // Wait for any single bit
+            portMAX_DELAY               // Wait indefinitely
         );
         if (bits & ARDUINO_FINISHED_BIT) {
-            ESP_LOGI(TAG, "收到 Arduino 任务完成信号");
+            ESP_LOGI(TAG, "Received Arduino task completion signal");
         }
 
-        // 删除 Arduino 任务
+        // Delete Arduino task
         vTaskDelete(arduinoTaskHandle);
-        ESP_LOGI(TAG, "Arduino 任务已删除");
+        ESP_LOGI(TAG, "Arduino task deleted");
 
-        // 清除事件组中的位（如果还未自动清除）
+        // Clear event group bits (if not auto-cleared)
         xEventGroupClearBits(arduino_event_group, ARDUINO_FINISHED_BIT);
         ESP_LOGI("Deep Sleep", "Entering deep sleep for 5 seconds...");
-        // 期望的深睡眠时间设为 5 秒（5000000 微秒）
-        #define DESIRED_SLEEP_TIME_US 5000000
-        // 使用外部 32.768kHz 晶振校准调整后进入深睡眠，
-        // 参考校准值设为 32768（理想值）
-        //start_adjusted_deep_sleep(DESIRED_SLEEP_TIME_US, 32768);
-        //start_adjusted_deep_sleep(timer, cal_ref);
 
+        // Desired deep sleep duration set to 5 seconds (5000000 microseconds)
+        #define DESIRED_SLEEP_TIME_US 5000000
+        // Adjust and enter deep sleep using external 32.768kHz crystal calibration
+        // Reference calibration value set to 32768 (ideal value)
+        //start_adjusted_deep_sleep(DESIRED_SLEEP_TIME_US, 32768);
     }
 }

@@ -23,7 +23,7 @@ struct Packet {
 void printMeasurement(struct Measurement m) {
     // Serial.println("Measurement Number: " + String(NODE_ADDRESS) + ":" + String(m.measurement_num));
     Serial.println("Moisture: " + String(m.moisture_percent) + "%");
-    Serial.println("Temperature: " + String(m.temperature) + "F");
+    Serial.println("Temperature: " + String(m.temperature) + "C");
     Serial.println("Humidity: " + String(m.humidity) + "%");
     Serial.println("Light Level: " + String(m.light_level));
     Serial.println("Battery Level: " + String(m.battery_level) + "mV");
@@ -48,15 +48,18 @@ void printPacket(struct Packet p) {
 RTC_DATA_ATTR struct Measurement measurements[MAX_MEASUREMENTS]; // measurements stored in RTC memory
 
 // For Device Sleep
-RTC_DATA_ATTR float duration = 0.02;                              // hours
-RTC_DATA_ATTR unsigned int num_measurements = 2;                             // num measurements to take in a set time
+RTC_DATA_ATTR unsigned int hour = 0;               // hours
+RTC_DATA_ATTR unsigned int minutes= 1;               //minutes
+RTC_DATA_ATTR unsigned int sec = 12;              //seconds  
+RTC_DATA_ATTR unsigned int num_measurements = 2;                // num measurements to take in a set time
 RTC_DATA_ATTR float time_sync_tolerance = 0.005; // factor
 RTC_DATA_ATTR float mesh_sync_tolerance = 0.005; // factor
 
 #define microseconds 1000000                           // 1 second in microseconds
+#define minutes_to_seconds 60
 #define hours_to_seconds 3600
 
-RTC_DATA_ATTR uint64_t timer = duration * hours_to_seconds / (num_measurements); // (equally spaces out measurements) converted to microseconds in code
+RTC_DATA_ATTR uint64_t timer = (hour * hours_to_seconds + minutes * minutes_to_seconds + sec)*microseconds/(num_measurements); // (equally spaces out measurements) converted to microseconds in code
 
 
 
@@ -87,7 +90,7 @@ RTC_DATA_ATTR boolean isFull;
 #define SENDING 3
 // #define SLEEPING 4
 
-RTC_DATA_ATTR unsigned int state = WAITING;
+RTC_DATA_ATTR volatile unsigned int state = WAITING;
 
 #if defined(SELF_ADDRESS) && defined(TARGET_ADDRESS)
 const uint8_t selfAddress_ = SELF_ADDRESS;
@@ -95,15 +98,19 @@ const uint8_t targetAddress_ = TARGET_ADDRESS;
 #else
 // Topology
 // define the node address
-#define NODE_ADDRESS_1 0 // 
-#define NODE_ADDRESS_2 1 //
-#define NODE_ADDRESS_3 2 //
+#define NODE_ADDRESS_1 2 // 
+#define NODE_ADDRESS_2 3 //
+#define NODE_ADDRESS_3 4 //
 #define ENDNODE_ADDRESS 254 // purposefully using the last number (0-254, 255 is broadcast)
 // TODO: according to this, we might have a max of 256 nodes in one mesh
 // selfAddress is node
 // targetAddress will be our gateway
-const uint8_t selfAddress_ = NODE_ADDRESS_1;      // CHANGE THIS!!!
-const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
+
+#ifndef SELF_ADDRESS
+#error "Must define SELF_ADDRESS"
+#endif
+uint8_t selfAddress_ = SELF_ADDRESS;
+//const uint8_t targetAddress_ = ENDNODE_ADDRESS; // integer value
 #endif
 
 // radio driver & message mesh delivery/receipt manager
@@ -123,6 +130,8 @@ int intRcv[MAX_MEASUREMENTS];
 
 uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
 uint8_t _timeSyncRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
+
+
 
 void rhSetup() {
     if (!RHMeshManager_.init())

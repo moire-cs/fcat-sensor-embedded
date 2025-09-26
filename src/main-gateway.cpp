@@ -8,7 +8,7 @@
 #include "radio_pinouts_and_constants.h"
 #include "gateway-info.h"
 #include "meshing.h"
-#include ".env.h"
+//#include ".env.h"
 #include <WiFi.h>
 // #include <WiFiClientSecure.h>
 #include "time.h"
@@ -41,8 +41,10 @@ void setup() {
     esp_task_wdt_add(NULL);
 
     rhSetup();
+    uint8_t selfAddress_ = 1;
     Serial.println(" ---------------- GATEWAY " + String(selfAddress_) +
         " INIT ---------------- ");
+    Serial.println("Now run time sync...");
 }
 
 // uint8_t _msgRcvBuf[RH_MESH_MAX_MESSAGE_LEN];
@@ -72,12 +74,12 @@ unsigned long getTime() {
 // }
 
 void loop() {
-    // gettimeofday(&start, NULL);
-    // epochTime = getTime();
-
+    gettimeofday(&start, NULL);
+    epochTime = getTime();
+    Serial.println("Current epoch time: " + String(epochTime));
+    runTimeSync();
     // GET route to receive information from backend (cycle period, num measurements, etc.)
     // unsigned long gatewaySleep = 24; // hours
-    runTimeSync();
     receive();
     sleep();
     // cycle();
@@ -87,7 +89,7 @@ void runTimeSync() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
-    Serial.printf("Sending data to %d...", RH_BROADCAST_ADDRESS);
+    Serial.printf("Sending time sync to %d...", RH_BROADCAST_ADDRESS);
     runGatewaySender(settings, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 }
 
@@ -95,16 +97,29 @@ void receive() {
     esp_task_wdt_reset();
     uint8_t _msgFrom;
     uint8_t _msgRcvBufLen = sizeof(_msgRcvBuf);
+    esp_task_wdt_init(60, true);
     runGatewayReceiver(15 * 1000, _msgRcvBuf, &_msgRcvBufLen, &_msgFrom, RFM95Modem_, RHMeshManager_);
 }
 
+// Does gateway need to sleep?
+
 void sleep() {
     esp_task_wdt_reset();
+    esp_task_wdt_init(60, true);
     gettimeofday(&end, NULL);
     uint64_t time_taken = (end.tv_sec - start.tv_sec) * microseconds + end.tv_usec - start.tv_usec;
-    uint64_t sleepTime = duration * hours_to_seconds * microseconds * (1 + 6 * time_sync_tolerance) - time_taken;
-    Serial.println("Sleeping for: " + String((double)sleepTime / microseconds) + " seconds");
-    esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
-    esp_task_wdt_reset();
-    esp_deep_sleep_start();
+    uint64_t taken_us = time_taken / 1000; // convert to milliseconds
+    uint64_t sleepTime = 50000 - taken_us; //50s for testing
+    /*
+    *still disagble time adjustment
+    */
+    // (0.5 * hours_to_seconds * microseconds) *(1 + 6 * time_sync_tolerance) - time_taken;//10s test time
+    Serial.println("Sleeping for: " + String((double)sleepTime / 1000) + " seconds");
+
+    //let's try just delay instead of deep sleep for now
+    delay(sleepTime);
+
+    //esp_err_t sleep_error = esp_sleep_enable_timer_wakeup(sleepTime); // takes into account time between start and sleep
+    //esp_task_wdt_reset();
+    //esp_deep_sleep_start();
 }

@@ -1,52 +1,113 @@
-void postData(struct Measurement m);
 
-bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
-    // while at it, wait for a message from other nodes
-    if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
+#ifndef GATEWAY_ADDR
+#define GATEWAY_ADDR 1
+#endif
 
-        char buf_[RH_MESH_MAX_MESSAGE_LEN];
+void postData(struct Packet p) {
+    if (p.node_number == 0 && p.data == nullptr) {
+        Serial.println("[ERROR] postData received invalid Packet");
+        return;}
+    String json = "MESSAGE:{";
 
-        esp_task_wdt_reset();
-        Serial.println("Received a message");
-        std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
-        timeSyncRcv = String(buf_).c_str();
+    // Node ID
+    json += "\"nodeId\": \"" + String(p.node_number) + "\",";
 
-        // do something with message, for example pass it through a callback
-        Serial.printf("Rebroadcasting to available nodes...\n");
+    // Sensors
+    json += "\"sensors\": [\"0\",\"1\",\"2\",\"3\",\"4\"],";
 
-        uint8_t _err = RHMeshManager_.sendtoWait(
-            reinterpret_cast<uint8_t*>(&timeSyncRcv[0]), timeSyncRcv.length(), RH_BROADCAST_ADDRESS);
-        if (_err != RH_ROUTER_ERROR_NONE) {
-            Serial.println("Fail to send broadcast...");
-        }
-        esp_task_wdt_reset();
-        return true;
+    // Times
+    json += "\"times\": [";
+    time_t now;
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+        // Serial.println("Failed to obtain time");
+        now = 0;
     }
-    esp_task_wdt_reset();
-    return false;
+    time(&now);
+    json += String(now) ; // current time
+    json += "],";
+
+    // Messages
+    json += "\"messages\": [";
+    bool firstMsg = true;
+    for (int i = 0; i < MAX_MEASUREMENTS; i++) {
+        if (p.data[i].moisture_percent == 0 && p.data[i].temperature == 0) continue;
+        if (!firstMsg) json += ",";
+        firstMsg = false;
+
+        json += "[";
+        json += String(p.data[i].moisture_percent) + ",";
+        json += String(p.data[i].temperature, 2) + ",";
+        json += String(p.data[i].humidity, 2) + ",";
+        json += String(p.data[i].light_level) + ",";
+        json += String(p.data[i].battery_level);
+        json += "]";
+    }
+    json += "]";
+
+    json += "}";
+
+    Serial.println("---- JSON Packet to Send ----");
+    Serial.println(json);
+    Serial.println("-----------------------------");
+}
+
+
+// ② Add randomized delay (0–max_ms ms) to reduce collisions
+inline void txJitter(uint16_t max_ms = 800) {
+    uint32_t r = esp_random() % max_ms;
+    // Serial.printf("Random delay: %d ms\n", r);
+    vTaskDelay(pdMS_TO_TICKS(r));
+}
+
+
+
+bool runTimeSyncReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf,
+    uint8_t* _msgRcvBufLen, uint8_t* _msgFrom,
+    RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+    Serial.printf("[TimeSync] Waiting up to %d ms...\n", wait_time);
+
+    if (!RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
+        Serial.println("[TimeSync] ❌ Timeout – did not receive settings.");
+        return false;
+    }
+
+    char buf_[RH_MESH_MAX_MESSAGE_LEN];
+    std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
+    timeSyncRcv = String(buf_).c_str();
+    Serial.printf("[TimeSync] ✅ Received time sync from node %u: \"%s\"\n", *_msgFrom, buf_);
+
+    return true;
 }
 
 void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // while at it, wait for a message from other nodes
     // TODO: I don't believe this node passes on the message
-
+    Serial.println("--------------------------------------------------------------");
+    Serial.printf("Enter runReceiver function, wait time: %d ms\n", wait_time);
+    Serial.printf("Current node address: %u\n", selfAddress_);
+    Serial.printf("Target node Location: %u\n", *_msgFrom);
     if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, wait_time, _msgFrom)) {
-
+        Serial.println("Received a message！");
         // char buf_[RH_MESH_MAX_MESSAGE_LEN];
         char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
         esp_task_wdt_reset();
         Serial.println("Received a message");
         std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
+        Serial.printf("Original Message received (as string)：\"%s\"\n", buf_);
 
 
         // msgRcv = (struct Measurement)buf_; // should be able to set it to this
         Measurement* received = reinterpret_cast<Measurement*>(&buf_);
-
+        if (received == nullptr) {
+            Serial.println("[ERROR] Received null measurement pointer");
+            return;
+        }
         // do something with message, for example pass it through a callback
-        Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", _msgFrom,
-            received, RFM95Modem_.lastRssi());
-
+        Serial.printf("[%d] Received measurement. RSSI: %d\n", *_msgFrom, RFM95Modem_.lastRssi());
+        printMeasurement(*received); 
+        
         // clears msgRcv
         // memset(msgRcv, 0, sizeof(msgRcv));
 
@@ -57,11 +118,22 @@ void runReceiver(uint16_t wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen
             Serial.println("Fail to send reply...");
         }
         esp_task_wdt_reset();
+
     }
+    Serial.println("Exiting runReceiver function");
+    Serial.println("--------------------------------------------------------------");
 }
 
-void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+void runSender(uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
     // Need to look into sending structs over this
+    // print logs
+    Serial.println("----------------------------------------------------------------");
+    Serial.println("Entering runSender function");
+    Serial.printf("Current node address: %u\n", selfAddress_);
+    // Serial.printf("Target node address (original input): %u\n", targetAddress_);
+    Serial.println("Starting to construct data packet...");
+    Serial.printf("[Send] Node %u → Gateway %u\n",
+        selfAddress_, GATEWAY_ADDR);
 
     Packet p;
     p.node_number = selfAddress_;
@@ -70,25 +142,41 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
     p.sensors[2] = 2;
     p.sensors[3] = 3;
     for (int i = 0; i < MAX_MEASUREMENTS; i++) {
-        p.data[i] = measurements[i];
+        memcpy(&p.data[i], &measurements[i], sizeof(Measurement));
     }
+    Serial.printf("Packet formed,Packet size: %d bits\n", sizeof(p));
+    // 2. Add jitter to avoid synchronized sends across nodes
+    txJitter();  // Default: random 0–800ms
 
-    uint8_t _err =
-        RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), targetAddress_);
+
+    //Sample code for broadcasting to all for the sake of testing
+    Serial.println("Sending Packet...");
+    //uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), RH_BROADCAST_ADDRESS); 
+
+    //original code
+    //uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&p), sizeof(p), targetAddress_); 
+    
+    uint8_t _err = RHMeshManager_.sendtoWait(
+        reinterpret_cast<uint8_t*>(&p), sizeof(p), RH_BROADCAST_ADDRESS);
 
     if (_err == RH_ROUTER_ERROR_NONE) {
         // message successfully be sent to the target node, or next neighboring
         // expecting to recieve a simple reply from the target node
         esp_task_wdt_reset();
-        Serial.printf(" successfull! Awaiting for Reply\n");
+        Serial.printf("Packet sent successfull!");
+        
+        //We'll blcok this part for now, since we don't need to send a reply to the sender
+/*
+        Serial.printf("Awaiting for Reply\n");
 
         if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 3000, _msgFrom)) {
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
 
             std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
             Measurement* received = reinterpret_cast<Measurement*>(&buf_);
-            Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
-                received, RFM95Modem_.lastRssi());
+
+            Serial.printf("[%d] Received measurement. RSSI: %d\n", *_msgFrom, RFM95Modem_.lastRssi());
+            printMeasurement(*received); 
         }
         else {
             Serial.println("No reply, is the target node running?");
@@ -103,76 +191,127 @@ void runSender(uint8_t targetAddress_, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufL
 
         // TODO: If nobody received, up power? Maybe a function to do default power applied (starts at low value and increases, then stays at whatever value works)
     }
+    esp_task_wdt_reset();*/
+    Serial.println("Exits runSender function");
+    Serial.println("----------------------------------------------------------------");
+}
+}
+void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
+    Serial.println("==============================================================");
+    Serial.println("Entering runGatewaySender function");
+    Serial.printf("Gateway settings to be sent: \"%s\"\n", settings.c_str());
+    Serial.printf("Settings length: %d bytes\n", settings.length());
+
+    Serial.println("Calling sendto() to broadcast message...");
+    const char* cstr = settings.c_str();
+    uint8_t _err = RHMeshManager_.sendto((uint8_t*)cstr, settings.length(), RH_BROADCAST_ADDRESS);
+    if (_err == RH_ROUTER_ERROR_NONE) {
+        Serial.println("[GatewaySender] ✅ Settings broadcasted successfully.");
+    } else {
+        Serial.printf("[GatewaySender] ❌ sendto failed. Error code: %d\n", _err);
+    }
     esp_task_wdt_reset();
+    Serial.println("Exit runGatewaySender function");
+    Serial.println("==============================================================");
 }
 
 void runGatewayReceiver(int wait_time, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
 
     Serial.println("Receiving mode active");
+
+    #define MAX_BUFFERED_PACKETS 10
+    Packet packetBuffer[MAX_BUFFERED_PACKETS];
+    int packetCount = 0;
+
     uint64_t start = millis();
-
-    // For wait_time, the gateway will wait for messages (multiple), and then post them to the backend
     while (millis() - start < wait_time) {
-        if (RHMeshManager_.recvfromAck(_msgRcvBuf, _msgRcvBufLen, _msgFrom)) {
-            char buf_[RH_MESH_MAX_MESSAGE_LEN];
+    esp_task_wdt_reset();
+    if (RHMeshManager_.recvfromAck(_msgRcvBuf, _msgRcvBufLen, _msgFrom)) {
+        if (packetCount < MAX_BUFFERED_PACKETS) {
+            memcpy(&packetBuffer[packetCount], _msgRcvBuf, sizeof(Packet));
+            packetCount++;
+        } else {
+            Serial.println("[GatewayReceiver] ⚠️ Packet buffer full. Dropping incoming packet.");
+        }
+    for (int i = 0; i < packetCount; i++) {
+        postData(packetBuffer[i]);
+    }
+            /*
+            for (int i = 0; i < MAX_MEASUREMENTS; i++) {
+                 printMeasurements(received[i]);
 
-            esp_task_wdt_reset();
-            Serial.println("Received a message");
-
-            Packet* received = reinterpret_cast<Packet*>(_msgRcvBuf);
-
-            printPacket(*received);
-            // for (int i = 0; i < MAX_MEASUREMENTS; i++) {
-            //     printMeasurements(received[i]);
-
-            // }
-
+            }
+            */
             // Resets msgRcv
             memset(msgRcv, 0, sizeof(msgRcv));
             esp_task_wdt_reset();
+            /*
+            *we'll block this part for now, since we don't need to send a reply to the sender
+            
+
             std::string _msgRply = String("Hi node " + String(*_msgFrom) + ", got the message!").c_str();
             uint8_t _err = RHMeshManager_.sendtoWait(
                 reinterpret_cast<uint8_t*>(&_msgRply[0]), _msgRply.size(), *_msgFrom);
             if (_err != RH_ROUTER_ERROR_NONE) {
                 Serial.println("Fail to send reply...");
             }
-            esp_task_wdt_reset();
+            
+            esp_task_wdt_reset();*/
         }
         esp_task_wdt_reset();
+        //delay(50);
     }
 }
+/*
 // struct Measurement* packetInfo, , uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_
 void runGatewaySender(String settings, uint8_t* _msgRcvBuf, uint8_t* _msgRcvBufLen, uint8_t* _msgFrom, RH_RF95 RFM95Modem_, RHMesh RHMeshManager_) {
-    uint8_t _err = RHMeshManager_.sendtoWait(reinterpret_cast<uint8_t*>(&settings[0]), settings.length(), RH_BROADCAST_ADDRESS);
+    Serial.println("==============================================================");
+    Serial.println("Entering runGatewaySender function");
+
+    // Print the settings string to be sent and its length
+    Serial.printf("Gateway settings to be sent: \"%s\"\n", settings.c_str());
+    Serial.printf("Settings length: %d bytes\n", settings.length());
+
+    // Use sendtoWait to send data, currently broadcasting to all nodes
+    Serial.println("Calling sendtoWait() to send message...");
+    uint8_t _err = RHMeshManager_.sendtoWait(
+        reinterpret_cast<uint8_t*>(&settings[0]),
+        settings.length(),
+        RH_BROADCAST_ADDRESS);
+
     if (_err == RH_ROUTER_ERROR_NONE) {
-        // message successfully be sent to the target node, or next neighboring
-        // expecting to recieve a simple reply from the target node
+        // Message successfully sent to the target or a neighboring node
+        // Expecting a simple reply from the target node
         esp_task_wdt_reset();
-        Serial.printf(" successfull! Awaiting for Reply\n");
+        Serial.printf("Successfully sent! Awaiting reply...\n");
+        Serial.println("sendtoWait result: success!");
+        Serial.println("Waiting for a reply from the other side, timeout: 1000 ms...");
 
-        // This eventually will need to be replaced
-        if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 250, _msgFrom)) {
+        if (RHMeshManager_.recvfromAckTimeout(_msgRcvBuf, _msgRcvBufLen, 1000, _msgFrom)) {
             char buf_[RH_MESH_MAX_MESSAGE_LEN];
-
             std::sprintf(buf_, "%s", reinterpret_cast<char*>(_msgRcvBuf));
-            //     // Measurement *received = reinterpret_cast<Measurement *>(buf_);
-            String received = String(buf_).c_str();
-            // Serial.printf("[%d] \"%s\" (%d). Sending a reply...\n", *_msgFrom,
-            //     received.c_str(), RFM95Modem_.lastRssi());
+
+            String received = String(buf_);
+            Serial.printf("Received reply from node [%d]: \"%s\"\n", *_msgFrom, received.c_str());
+            Serial.printf("RSSI value of the reply: %d\n", RFM95Modem_.lastRssi());
             Serial.println(received);
         }
         else {
-            Serial.println("No reply, is the target node running?");
+            Serial.println("No reply received. Is the target node running?");
         }
 
         esp_task_wdt_reset();
     }
     else {
-        Serial.println(
-            "sendtoWait failed. No response from intermediary node, are they "
-            "running?");
+        Serial.println("sendtoWait failed. No response from intermediary node. Are they running?");
+        Serial.printf("Returned error code: %d\n", _err);
 
-        // TODO: If nobody received, up power? Maybe a function to do default power applied (starts at low value and increases, then stays at whatever value works)
+        // TODO: If no node received it, consider increasing power level dynamically
     }
+
     esp_task_wdt_reset();
+    Serial.println("Exiting runGatewaySender function");
+    Serial.println("==============================================================");
 }
+
+*/
